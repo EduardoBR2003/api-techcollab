@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: api-techcollab
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/connecting_to_mysql?useTimezone=true&serverTimezone=UTC
+    username: root
+    password: admin123
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+    show-sql: false
+    open-in-view: false
+logging:
+  level:
+    #root: WARN
+    br.com.eduardo: DEBUG
+
