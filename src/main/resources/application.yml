@@ -3,7 +3,7 @@ spring:
     name: api-techcollab
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/connecting_to_mysql?useTimezone=true&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/api_techcollab_database?useTimezone=true&serverTimezone=UTC
     username: root
     password: admin123
   jpa:
