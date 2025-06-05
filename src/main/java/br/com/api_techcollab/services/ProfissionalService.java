@@ -1,4 +1,4 @@
-package br.com.api_techcollab.service;
+package br.com.api_techcollab.services;
 
 import br.com.api_techcollab.dto.ProfissionalCreateDTO;
 import br.com.api_techcollab.dto.ProfissionalResponseDTO;

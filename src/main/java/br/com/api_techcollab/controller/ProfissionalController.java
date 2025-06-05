@@ -2,7 +2,7 @@ package br.com.api_techcollab.controller;
 
 import br.com.api_techcollab.dto.ProfissionalCreateDTO;
 import br.com.api_techcollab.dto.ProfissionalResponseDTO;
-import br.com.api_techcollab.service.ProfissionalService;
+import br.com.api_techcollab.services.ProfissionalService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
