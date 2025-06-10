@@ -2,10 +2,12 @@ package br.com.api_techcollab.dto;
 
 import br.com.api_techcollab.model.enums.NivelExperiencia;
 import br.com.api_techcollab.model.enums.TiposUsuarios;
+import org.springframework.hateoas.RepresentationModel;
+
 import java.util.Date;
 import java.util.List;
 
-public class ProfissionalResponseDTO {
+public class ProfissionalResponseDTO extends RepresentationModel<ProfissionalResponseDTO> {
 
     private Long id;
     private String nome;

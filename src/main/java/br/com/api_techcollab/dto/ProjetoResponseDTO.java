@@ -1,9 +1,11 @@
 package br.com.api_techcollab.dto;
 
 import br.com.api_techcollab.model.enums.StatusProjeto;
+import org.springframework.hateoas.RepresentationModel;
+
 import java.util.Date;
 
-public class ProjetoResponseDTO {
+public class ProjetoResponseDTO extends RepresentationModel<ProjetoResponseDTO> {
 
     private Long id;
     private String titulo;

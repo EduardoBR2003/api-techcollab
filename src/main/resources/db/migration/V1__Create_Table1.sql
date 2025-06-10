@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS `entrega_projeto` (
 CREATE TABLE IF NOT EXISTS `interesse_projeto` (
                                                    `id` bigint NOT NULL AUTO_INCREMENT,
                                                    `mensagem_motivacao` text,
-                                                   `status_interesse` enum('ALOCADO','PENDENTE','RECUSADO_DO_PROF','SELECIONADO') NOT NULL,
+                                                   `status_interesse` enum('ALOCADO','PENDENTE','RECUSADO_DO_PROF','SELECIONADO','RECUSADO_PELA_EMPRESA') NOT NULL,
     `profissional_id` bigint NOT NULL,
     `vagaprojeto_id` bigint NOT NULL,
     PRIMARY KEY (`id`),

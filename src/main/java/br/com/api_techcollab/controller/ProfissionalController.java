@@ -1,9 +1,10 @@
 package br.com.api_techcollab.controller;
 
-import br.com.api_techcollab.dto.ProfissionalCreateDTO;
-import br.com.api_techcollab.dto.ProfissionalResponseDTO;
+import br.com.api_techcollab.dto.*;
+import br.com.api_techcollab.services.InteresseProjetoService;
 import br.com.api_techcollab.services.ProfissionalService;
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,15 +18,20 @@ public class ProfissionalController {
     @Autowired
     private ProfissionalService profissionalService;
 
+    @Autowired
+    private InteresseProjetoService interesseProjetoService;
+
     @GetMapping
     public ResponseEntity<List<ProfissionalResponseDTO>> findAll() {
         List<ProfissionalResponseDTO> profissionais = profissionalService.findAll();
+
         return ResponseEntity.ok(profissionais);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ProfissionalResponseDTO> findById(@PathVariable Long id) {
         ProfissionalResponseDTO profissional = profissionalService.findById(id);
+
         return ResponseEntity.ok(profissional);
     }
 

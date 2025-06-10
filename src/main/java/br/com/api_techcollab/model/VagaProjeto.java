@@ -23,7 +23,7 @@ public class VagaProjeto implements Serializable {
     @Column(name = "titulo_vaga", nullable = false, length = 100)
     private String tituloVaga;
 
-    @ElementCollection(fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "vaga_habilidades", joinColumns = @JoinColumn(name = "vaga_id"))
     @Column(name = "habilidade_requerida")
     private List<String> habilidadesRequeridas;

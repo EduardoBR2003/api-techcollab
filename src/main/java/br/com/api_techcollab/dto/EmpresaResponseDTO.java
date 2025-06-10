@@ -1,9 +1,11 @@
 package br.com.api_techcollab.dto;
 
 import br.com.api_techcollab.model.enums.TiposUsuarios;
+import org.springframework.hateoas.RepresentationModel;
+
 import java.util.Date;
 
-public class EmpresaResponseDTO {
+public class EmpresaResponseDTO extends RepresentationModel<EmpresaResponseDTO> {
 
     private Long id;
     private String nome;
