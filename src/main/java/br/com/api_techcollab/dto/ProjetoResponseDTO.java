@@ -1,11 +1,13 @@
 package br.com.api_techcollab.dto;
 
 import br.com.api_techcollab.model.enums.StatusProjeto;
-import org.springframework.hateoas.RepresentationModel;
-
+// import org.springframework.hateoas.RepresentationModel; // REMOVER ESTA LINHA
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
-public class ProjetoResponseDTO extends RepresentationModel<ProjetoResponseDTO> {
+// REMOVER "extends RepresentationModel<...>"
+public class ProjetoResponseDTO {
 
     private Long id;
     private String titulo;
@@ -14,11 +16,14 @@ public class ProjetoResponseDTO extends RepresentationModel<ProjetoResponseDTO> 
     private StatusProjeto statusProjeto;
     private Date dataInicioPrevista;
     private Date dataConclusaoPrevista;
-    private EmpresaSimpleResponseDTO empresa; // DTO aninhado
+    private EmpresaSimpleResponseDTO empresa;
+
+    // ADICIONAR a lista de links customizados
+    private List<CustomLink> links = new ArrayList<>();
 
     public ProjetoResponseDTO() {}
 
-    // Getters e Setters
+    // Getters e Setters existentes...
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getTitulo() { return titulo; }
@@ -35,4 +40,8 @@ public class ProjetoResponseDTO extends RepresentationModel<ProjetoResponseDTO> 
     public void setDataConclusaoPrevista(Date dataConclusaoPrevista) { this.dataConclusaoPrevista = dataConclusaoPrevista; }
     public EmpresaSimpleResponseDTO getEmpresa() { return empresa; }
     public void setEmpresa(EmpresaSimpleResponseDTO empresa) { this.empresa = empresa; }
+
+    // ADICIONAR Getter e Setter para os links
+    public List<CustomLink> getLinks() { return links; }
+    public void setLinks(List<CustomLink> links) { this.links = links; }
 }

@@ -1,11 +1,13 @@
 package br.com.api_techcollab.services;
 
+import br.com.api_techcollab.controller.EmpresaController;
+import br.com.api_techcollab.controller.InteresseProjetoController;
+import br.com.api_techcollab.controller.ProfissionalController;
+import br.com.api_techcollab.controller.ProjetoController;
 import br.com.api_techcollab.dto.*;
 import br.com.api_techcollab.exceptions.AccessDeniedException;
 import br.com.api_techcollab.exceptions.BusinessException;
 import br.com.api_techcollab.exceptions.ResourceNotFoundException;
-// O DataMapper não será usado diretamente no toResponseDTO para o objeto principal para evitar ambiguidade.
-// import br.com.api_techcollab.mapper.DataMapper;
 import br.com.api_techcollab.model.InteresseProjeto;
 import br.com.api_techcollab.model.Profissional;
 import br.com.api_techcollab.model.Projeto;
@@ -21,6 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Service
 public class InteresseProjetoService {
@@ -38,40 +43,6 @@ public class InteresseProjetoService {
 
     @Autowired
     private EquipeProjetoService equipeProjetoService; // Para adicionar à equipe
-
-    // Método para mapear para InteresseProjetoResponseDTO AJUSTADO
-    private InteresseProjetoResponseDTO toResponseDTO(InteresseProjeto interesse) {
-        InteresseProjetoResponseDTO dto = new InteresseProjetoResponseDTO(); // Instanciar manualmente
-
-        // Mapear campos diretos de InteresseProjeto para InteresseProjetoResponseDTO
-        dto.setId(interesse.getId());
-        dto.setStatusInteresse(interesse.getStatusInteresse());
-        dto.setMensagemMotivacao(interesse.getMensagemMotivacao());
-
-        Profissional prof = interesse.getProfissional();
-        if (prof != null) {
-            // Você pode usar o DataMapper para DTOs simples se não houver ambiguidade neles
-            // ou instanciar manualmente como abaixo para clareza.
-            dto.setProfissional(new ProfissionalSimpleResponseDTO(prof.getId(), prof.getNome(), prof.getEmail()));
-        }
-
-        VagaProjeto vaga = interesse.getVagaProjeto();
-        if (vaga != null) {
-            dto.setVagaProjeto(new VagaProjetoSimpleResponseDTO(vaga.getId(), vaga.getTituloVaga(), vaga.getProjeto().getId()));
-
-            Projeto proj = vaga.getProjeto();
-            if (proj != null) {
-                // Aqui garantimos que o 'titulo' do ProjetoSimpleResponseDTO venha do Projeto correto
-                dto.setProjeto(new ProjetoSimpleResponseDTO(proj.getId(), proj.getTitulo()));
-            } else {
-                dto.setProjeto(null);
-            }
-        } else {
-            dto.setVagaProjeto(null);
-            dto.setProjeto(null);
-        }
-        return dto;
-    }
 
     @Transactional
     public InteresseProjetoResponseDTO manifestarInteresse(Long profissionalId, InteresseCreateDTO dto) {
@@ -99,7 +70,7 @@ public class InteresseProjetoService {
 
         InteresseProjeto savedInteresse = interesseProjetoRepository.save(interesse);
         logger.info("Interesse ID " + savedInteresse.getId() + " criado com sucesso.");
-        return toResponseDTO(savedInteresse); // Chama o método ajustado
+        return toResponseDTOWithLinks(savedInteresse);
     }
 
     public List<InteresseProjetoResponseDTO> visualizarInteressadosPorVaga(Long vagaId, Long empresaIdAutenticada) {
@@ -111,7 +82,7 @@ public class InteresseProjetoService {
         }
 
         List<InteresseProjeto> interesses = interesseProjetoRepository.findByVagaProjetoId(vagaId);
-        return interesses.stream().map(this::toResponseDTO).collect(Collectors.toList()); // Chama o método ajustado
+        return interesses.stream().map(this::toResponseDTOWithLinks).collect(Collectors.toList()); // Chama o método ajustado
     }
 
     @Transactional
@@ -134,7 +105,7 @@ public class InteresseProjetoService {
         interesse.setStatusInteresse(dto.getStatusInteresse());
         InteresseProjeto updatedInteresse = interesseProjetoRepository.save(interesse);
         logger.info("Status do interesse ID " + interesseId + " atualizado para " + dto.getStatusInteresse());
-        return toResponseDTO(updatedInteresse); // Chama o método ajustado
+        return toResponseDTOWithLinks(updatedInteresse); // Chama o método ajustado
     }
 
     @Transactional
@@ -163,7 +134,7 @@ public class InteresseProjetoService {
         } else {
             logger.info("Interesse ID " + interesseId + " RECUSADO pelo profissional.");
         }
-        return toResponseDTO(updatedInteresse); // Chama o método ajustado
+        return toResponseDTOWithLinks(updatedInteresse); // Chama o método ajustado
     }
 
     public List<InteresseProjetoResponseDTO> consultarStatusInteressesProfissional(Long profissionalId) {
@@ -172,6 +143,41 @@ public class InteresseProjetoService {
             throw new ResourceNotFoundException("Profissional não encontrado com ID: " + profissionalId);
         }
         List<InteresseProjeto> interesses = interesseProjetoRepository.findByProfissionalId(profissionalId);
-        return interesses.stream().map(this::toResponseDTO).collect(Collectors.toList()); // Chama o método ajustado
+        return interesses.stream().map(this::toResponseDTOWithLinks).collect(Collectors.toList()); // Chama o método ajustado
+    }
+
+    private InteresseProjetoResponseDTO toResponseDTOWithLinks(InteresseProjeto interesse) {
+        InteresseProjetoResponseDTO dto = new InteresseProjetoResponseDTO();
+
+        dto.setId(interesse.getId());
+        dto.setStatusInteresse(interesse.getStatusInteresse());
+        dto.setMensagemMotivacao(interesse.getMensagemMotivacao());
+
+        Profissional prof = interesse.getProfissional();
+        VagaProjeto vaga = interesse.getVagaProjeto();
+        Projeto proj = vaga.getProjeto();
+        Long empresaId = proj.getEmpresa().getId();
+
+        if (prof != null) {
+            dto.setProfissional(new ProfissionalSimpleResponseDTO(prof.getId(), prof.getNome(), prof.getEmail()));
+            dto.getLinks().add(new CustomLink("profissional", linkTo(methodOn(ProfissionalController.class).findById(prof.getId())).withSelfRel().getHref(), "GET"));
+        }
+
+        if (vaga != null) {
+            dto.setVagaProjeto(new VagaProjetoSimpleResponseDTO(vaga.getId(), vaga.getTituloVaga(), proj.getId()));
+        }
+
+        if (proj != null) {
+            dto.setProjeto(new ProjetoSimpleResponseDTO(proj.getId(), proj.getTitulo()));
+            dto.getLinks().add(new CustomLink("projeto", linkTo(methodOn(ProjetoController.class).buscarProjetoPorId(proj.getId())).withSelfRel().getHref(), "GET"));
+        }
+
+        // Links de Ação baseados no Status
+
+        if (interesse.getStatusInteresse() == StatusInteresse.SELECIONADO) {
+            dto.getLinks().add(new CustomLink("profissional_responder", linkTo(methodOn(InteresseProjetoController.class).profissionalResponderAlocacao(prof.getId(), interesse.getId(), null)).withSelfRel().getHref(), "PUT"));
+        }
+
+        return dto;
     }
 }

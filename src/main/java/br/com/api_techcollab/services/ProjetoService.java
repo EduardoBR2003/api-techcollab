@@ -1,11 +1,12 @@
 package br.com.api_techcollab.services;
 
+import br.com.api_techcollab.controller.*;
+import br.com.api_techcollab.dto.CustomLink;
 import br.com.api_techcollab.dto.ProjetoCreateDTO;
 import br.com.api_techcollab.dto.ProjetoResponseDTO;
 import br.com.api_techcollab.dto.ProjetoUpdateDTO;
-import br.com.api_techcollab.dto.VagaProjetoCreateDTO; // Supondo que ProjetoCreateDTO possa ter vagas
-import br.com.api_techcollab.exceptions.AccessDeniedException; // Criar esta exceção personalizada
-import br.com.api_techcollab.exceptions.BusinessException; // Criar esta exceção personalizada
+import br.com.api_techcollab.exceptions.AccessDeniedException;
+import br.com.api_techcollab.exceptions.BusinessException;
 import br.com.api_techcollab.exceptions.ResourceNotFoundException;
 import br.com.api_techcollab.mapper.DataMapper;
 import br.com.api_techcollab.model.Empresa;
@@ -13,15 +14,17 @@ import br.com.api_techcollab.model.Projeto;
 import br.com.api_techcollab.model.enums.StatusProjeto;
 import br.com.api_techcollab.repository.EmpresaRepository;
 import br.com.api_techcollab.repository.ProjetoRepository;
-import br.com.api_techcollab.repository.VagaProjetoRepository; // Para limpar vagas ao excluir projeto
+import br.com.api_techcollab.repository.VagaProjetoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Service
 public class ProjetoService {
@@ -35,9 +38,6 @@ public class ProjetoService {
     private EmpresaRepository empresaRepository;
 
     @Autowired
-    private VagaProjetoService vagaProjetoService; // Para criar vagas
-
-    @Autowired
     private VagaProjetoRepository vagaProjetoRepository; // Para limpar vagas
 
     @Transactional
@@ -48,19 +48,11 @@ public class ProjetoService {
 
         Projeto projeto = DataMapper.parseObject(dto, Projeto.class);
         projeto.setEmpresa(empresa);
-        projeto.setStatusProjeto(StatusProjeto.ABERTO_PARA_INTERESSE); // Status inicial
-        // Data de criação do projeto pode ser definida aqui se necessário, ou via @PrePersist na entidade
+        projeto.setStatusProjeto(StatusProjeto.ABERTO_PARA_INTERESSE);
 
         Projeto savedProjeto = projetoRepository.save(projeto);
-
-        // Opcional: Criar vagas se vierem no DTO (ProjetoCreateDTO precisaria de List<VagaProjetoCreateDTO>)
-        // if (dto.getVagas() != null && !dto.getVagas().isEmpty()) {
-        //     for (VagaProjetoCreateDTO vagaDto : dto.getVagas()) {
-        //         vagaProjetoService.criarVagaParaProjetoInterno(savedProjeto.getId(), vagaDto, empresaId);
-        //     }
-        // }
         logger.info("Projeto ID " + savedProjeto.getId() + " criado com sucesso.");
-        return DataMapper.parseObject(savedProjeto, ProjetoResponseDTO.class);
+        return buscarProjetoPorId(savedProjeto.getId()); // Retorna com links
     }
 
     @Transactional
@@ -73,20 +65,18 @@ public class ProjetoService {
             throw new AccessDeniedException("Empresa não autorizada a editar este projeto.");
         }
 
-        // Atualizar campos permitidos
         if (dto.getTitulo() != null) projeto.setTitulo(dto.getTitulo());
         if (dto.getDescDetalhada() != null) projeto.setDescDetalhada(dto.getDescDetalhada());
         if (dto.getPrecoOfertado() != null) projeto.setPrecoOfertado(dto.getPrecoOfertado());
         if (dto.getDataInicioPrevista() != null) projeto.setDataInicioPrevista(dto.getDataInicioPrevista());
         if (dto.getDataConclusaoPrevista() != null) projeto.setDataConclusaoPrevista(dto.getDataConclusaoPrevista());
         if (dto.getStatusProjeto() != null) {
-            // Adicionar regras para transição de status se necessário
             projeto.setStatusProjeto(dto.getStatusProjeto());
         }
 
         Projeto updatedProjeto = projetoRepository.save(projeto);
         logger.info("Projeto ID " + updatedProjeto.getId() + " atualizado com sucesso.");
-        return DataMapper.parseObject(updatedProjeto, ProjetoResponseDTO.class);
+        return buscarProjetoPorId(updatedProjeto.getId()); // Retorna com links
     }
 
     @Transactional
@@ -116,27 +106,37 @@ public class ProjetoService {
         logger.info("Projeto ID " + projetoId + " excluído com sucesso.");
     }
 
-    public List<ProjetoResponseDTO> consultarProjetosDisponiveis(/* filtros */) {
+    public List<ProjetoResponseDTO> consultarProjetosDisponiveis() {
         logger.info("Consultando projetos disponíveis");
-        // Implementar lógica de filtros (tecnologia, tipo, duração) aqui
         List<Projeto> projetos = projetoRepository.findAll().stream()
                 .filter(p -> p.getStatusProjeto() == StatusProjeto.ABERTO_PARA_INTERESSE)
                 .collect(Collectors.toList());
-        return DataMapper.parseListObjects(projetos, ProjetoResponseDTO.class);
+
+        List<ProjetoResponseDTO> projetosDTO = DataMapper.parseListObjects(projetos, ProjetoResponseDTO.class);
+
+        projetosDTO.forEach(p -> {
+            try {
+                // MODIFICAÇÃO: Lógica HATEOAS Customizada
+                p.getLinks().add(new CustomLink("self", linkTo(methodOn(ProjetoController.class).buscarProjetoPorId(p.getId())).withSelfRel().getHref(), "GET"));
+            } catch (Exception e) {
+                logger.warning("Erro ao gerar link HATEOAS para o projeto ID: " + p.getId());
+            }
+        });
+
+        return projetosDTO;
     }
 
     public List<ProjetoResponseDTO> consultarProjetosPorEmpresa(Long empresaId) {
         logger.info("Consultando projetos da empresa ID: " + empresaId);
-        // Validação se a empresa existe pode ser adicionada
+        if (!empresaRepository.existsById(empresaId)) {
+            throw new ResourceNotFoundException("Empresa não encontrada com ID: " + empresaId);
+        }
         List<Projeto> projetos = projetoRepository.findByEmpresaId(empresaId);
-        return DataMapper.parseListObjects(projetos, ProjetoResponseDTO.class);
-    }
 
-    public ProjetoResponseDTO buscarProjetoPorId(Long projetoId) {
-        logger.info("Buscando projeto por ID: " + projetoId);
-        Projeto projeto = projetoRepository.findById(projetoId)
-                .orElseThrow(() -> new ResourceNotFoundException("Projeto não encontrado com ID: " + projetoId));
-        return DataMapper.parseObject(projeto, ProjetoResponseDTO.class);
+        // Reutiliza o método buscarProjetoPorId para garantir que cada projeto na lista tenha seus links HATEOAS
+        return projetos.stream()
+                .map(projeto -> this.buscarProjetoPorId(projeto.getId()))
+                .collect(Collectors.toList());
     }
 
     // Método para atualizar status do projeto, usado por outros services
@@ -147,5 +147,23 @@ public class ProjetoService {
         projeto.setStatusProjeto(novoStatus);
         projetoRepository.save(projeto);
         logger.info("Status do Projeto ID " + projetoId + " atualizado para " + novoStatus);
+    }
+
+    public ProjetoResponseDTO buscarProjetoPorId(Long projetoId) {
+        logger.info("Buscando projeto por ID: " + projetoId);
+        Projeto projeto = projetoRepository.findById(projetoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projeto não encontrado com ID: " + projetoId));
+
+        ProjetoResponseDTO projetoDTO = DataMapper.parseObject(projeto, ProjetoResponseDTO.class);
+
+        projetoDTO.getLinks().add(new CustomLink("self", linkTo(methodOn(ProjetoController.class).buscarProjetoPorId(projetoId)).withSelfRel().getHref(), "GET"));
+        projetoDTO.getLinks().add(new CustomLink("update", linkTo(methodOn(ProjetoController.class).editarProjeto(projetoId, null)).withSelfRel().getHref(), "PUT"));
+        projetoDTO.getLinks().add(new CustomLink("delete", linkTo(methodOn(ProjetoController.class).excluirProjeto(projetoId, null)).withSelfRel().getHref(), "DELETE"));
+        projetoDTO.getLinks().add(new CustomLink("empresa_proprietaria", linkTo(methodOn(EmpresaController.class).findById(projeto.getEmpresa().getId())).withSelfRel().getHref(), "GET"));
+        projetoDTO.getLinks().add(new CustomLink("vagas", linkTo(methodOn(VagaProjetoController.class).listarVagasPorProjeto(projetoId)).withSelfRel().getHref(), "GET"));
+        projetoDTO.getLinks().add(new CustomLink("equipe", linkTo(methodOn(EquipeProjetoController.class).visualizarEquipeProjeto(projetoId)).withSelfRel().getHref(), "GET"));
+        projetoDTO.getLinks().add(new CustomLink("projetos_disponiveis", linkTo(methodOn(ProjetoController.class).consultarProjetosDisponiveis()).withSelfRel().getHref(), "GET"));
+
+        return projetoDTO;
     }
 }

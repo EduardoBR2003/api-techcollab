@@ -1,5 +1,8 @@
 package br.com.api_techcollab.services;
 
+import br.com.api_techcollab.controller.ProjetoController;
+import br.com.api_techcollab.controller.VagaProjetoController;
+import br.com.api_techcollab.dto.CustomLink;
 import br.com.api_techcollab.dto.VagaProjetoCreateDTO;
 import br.com.api_techcollab.dto.VagaProjetoResponseDTO;
 import br.com.api_techcollab.exceptions.AccessDeniedException;
@@ -18,6 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Service
 public class VagaProjetoService {
@@ -31,25 +38,22 @@ public class VagaProjetoService {
     private ProjetoRepository projetoRepository;
 
     @Autowired
-    private InteresseProjetoRepository interesseProjetoRepository; // Para verificar interesses ao excluir vaga
+    private InteresseProjetoRepository interesseProjetoRepository;
 
-    @Transactional
-    public VagaProjetoResponseDTO criarVagaParaProjeto(Long projetoId, VagaProjetoCreateDTO dto) {
-        logger.info("Criando vaga para projeto ID: " + projetoId );
-        Projeto projeto = projetoRepository.findById(projetoId)
-                .orElseThrow(() -> new ResourceNotFoundException("Projeto não encontrado com ID: " + projetoId));
+    // MODIFICAÇÃO: Método helper para adicionar links HATEOAS CORRIGIDO
+    private VagaProjetoResponseDTO adicionarLinksHATEOAS(VagaProjeto vaga) {
+        VagaProjetoResponseDTO dto = DataMapper.parseObject(vaga, VagaProjetoResponseDTO.class);
 
+        Long projetoId = vaga.getProjeto().getId();
+        Long vagaId = vaga.getId();
 
-        if (projeto.getStatusProjeto() != StatusProjeto.ABERTO_PARA_INTERESSE && projeto.getStatusProjeto() != StatusProjeto.EM_FORMACAO_EQUIPE) {
-            throw new BusinessException("Não é possível adicionar vaga ao projeto no status atual: " + projeto.getStatusProjeto());
-        }
+        // Usando methodOn para construir links de forma segura, passando todos os PathVariables
+        dto.getLinks().add(new CustomLink("self", linkTo(methodOn(VagaProjetoController.class).getVaga(projetoId, vagaId)).withSelfRel().getHref(), "GET"));
+        dto.getLinks().add(new CustomLink("update", linkTo(methodOn(VagaProjetoController.class).editarVaga(projetoId, vagaId, null)).withSelfRel().getHref(), "PUT"));
+        dto.getLinks().add(new CustomLink("delete", linkTo(methodOn(VagaProjetoController.class).excluirVaga(projetoId, vagaId, null)).withSelfRel().getHref(), "DELETE"));
+        dto.getLinks().add(new CustomLink("projeto", linkTo(methodOn(ProjetoController.class).buscarProjetoPorId(projetoId)).withSelfRel().getHref(), "GET"));
 
-        VagaProjeto vaga = DataMapper.parseObject(dto, VagaProjeto.class);
-        vaga.setProjeto(projeto);
-
-        VagaProjeto savedVaga = vagaProjetoRepository.save(vaga);
-        logger.info("Vaga ID " + savedVaga.getId() + " criada com sucesso para o projeto ID " + projetoId +" da empresa "+ projeto.getTitulo());
-        return DataMapper.parseObject(savedVaga, VagaProjetoResponseDTO.class);
+        return dto;
     }
 
     public List<VagaProjetoResponseDTO> listarVagasPorProjeto(Long projetoId) {
@@ -58,16 +62,42 @@ public class VagaProjetoService {
             throw new ResourceNotFoundException("Projeto não encontrado com ID: " + projetoId);
         }
         List<VagaProjeto> vagas = vagaProjetoRepository.findByProjetoId(projetoId);
-        return DataMapper.parseListObjects(vagas, VagaProjetoResponseDTO.class);
+
+        return vagas.stream()
+                .map(this::adicionarLinksHATEOAS)
+                .collect(Collectors.toList());
+    }
+
+    // MODIFICAÇÃO: Novo método para buscar uma única vaga e adicionar links
+    public VagaProjetoResponseDTO buscarVagaPorId(Long vagaId) {
+        VagaProjeto vaga = vagaProjetoRepository.findById(vagaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Vaga não encontrada com ID: " + vagaId));
+        return adicionarLinksHATEOAS(vaga);
     }
 
     @Transactional
-    public VagaProjetoResponseDTO editarVagaProjeto(Long vagaId, VagaProjetoCreateDTO dto) {
-        logger.info("Editando vaga ID: " + vagaId);
+    public VagaProjetoResponseDTO criarVagaParaProjeto(Long projetoId, VagaProjetoCreateDTO vagaCreateDTO) {
+        Projeto projeto = projetoRepository.findById(projetoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projeto não encontrado com ID: " + projetoId));
+
+        if (projeto.getStatusProjeto() != StatusProjeto.ABERTO_PARA_INTERESSE && projeto.getStatusProjeto() != StatusProjeto.EM_FORMACAO_EQUIPE) {
+            throw new BusinessException("Não é possível adicionar vaga ao projeto no status atual: " + projeto.getStatusProjeto());
+        }
+
+        VagaProjeto vaga = DataMapper.parseObject(vagaCreateDTO, VagaProjeto.class);
+        vaga.setProjeto(projeto);
+
+        VagaProjeto savedVaga = vagaProjetoRepository.save(vaga);
+        logger.info("Vaga ID " + savedVaga.getId() + " criada com sucesso para o projeto ID " + projetoId +" da empresa "+ projeto.getTitulo());
+
+        return adicionarLinksHATEOAS(savedVaga);
+    }
+
+    @Transactional
+    public VagaProjetoResponseDTO editarVagaProjeto(Long vagaId, VagaProjetoCreateDTO vagaCreateDTO) {
         VagaProjeto vaga = vagaProjetoRepository.findById(vagaId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vaga não encontrada com ID: " + vagaId));
 
-        // Regra: não editar se houver profissionais alocados ou projeto em status avançado
         boolean hasInteressesAtivos = interesseProjetoRepository.findByVagaProjetoId(vagaId)
                 .stream().anyMatch(i -> i.getStatusInteresse() == br.com.api_techcollab.model.enums.StatusInteresse.ALOCADO ||
                         i.getStatusInteresse() == br.com.api_techcollab.model.enums.StatusInteresse.SELECIONADO);
@@ -79,15 +109,15 @@ public class VagaProjetoService {
             throw new BusinessException("Vaga não pode ser editada pois o projeto está em desenvolvimento ou concluído.");
         }
 
-
-        vaga.setTituloVaga(dto.getTituloVaga());
-        vaga.setHabilidadesRequeridas(dto.getHabilidadesRequeridas());
-        vaga.setNivelExpDesejado(dto.getNivelExpDesejado());
-        vaga.setQuantFuncionarios(dto.getQuantFuncionarios());
+        vaga.setTituloVaga(vagaCreateDTO.getTituloVaga());
+        vaga.setHabilidadesRequeridas(vagaCreateDTO.getHabilidadesRequeridas());
+        vaga.setNivelExpDesejado(vagaCreateDTO.getNivelExpDesejado());
+        vaga.setQuantFuncionarios(vagaCreateDTO.getQuantFuncionarios());
 
         VagaProjeto updatedVaga = vagaProjetoRepository.save(vaga);
         logger.info("Vaga ID " + updatedVaga.getId() + " atualizada com sucesso.");
-        return DataMapper.parseObject(updatedVaga, VagaProjetoResponseDTO.class);
+
+        return adicionarLinksHATEOAS(updatedVaga);
     }
 
     @Transactional
@@ -100,7 +130,6 @@ public class VagaProjetoService {
             throw new AccessDeniedException("Empresa não autorizada a excluir esta vaga.");
         }
 
-        // Regra: Verificar se há interesses PENDENTES ou SELECIONADOS para esta vaga.
         long countInteressesAtivos = interesseProjetoRepository.findByVagaProjetoId(vagaId).stream()
                 .filter(i -> i.getStatusInteresse() == br.com.api_techcollab.model.enums.StatusInteresse.PENDENTE ||
                         i.getStatusInteresse() == br.com.api_techcollab.model.enums.StatusInteresse.SELECIONADO ||
@@ -114,7 +143,6 @@ public class VagaProjetoService {
         vagaProjetoRepository.delete(vaga);
         logger.info("Vaga ID " + vagaId + " excluída com sucesso.");
     }
-
 
     public VagaProjeto buscarVagaPorIdEntidade(Long vagaId) {
         return vagaProjetoRepository.findById(vagaId)

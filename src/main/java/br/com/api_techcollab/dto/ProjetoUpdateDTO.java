@@ -5,6 +5,9 @@ import java.util.Date;
 
 public class ProjetoUpdateDTO {
 
+    // ID da empresa que está realizando a ação, para validação no service
+    private Long empresaId;
+
     private String titulo;
     private String descDetalhada;
     private Double precoOfertado;
@@ -14,7 +17,11 @@ public class ProjetoUpdateDTO {
 
     public ProjetoUpdateDTO() {}
 
-    // Getters e Setters
+    // Getter e Setter para empresaId
+    public Long getEmpresaId() { return empresaId; }
+    public void setEmpresaId(Long empresaId) { this.empresaId = empresaId; }
+
+    // Getters e Setters existentes
     public String getTitulo() { return titulo; }
     public void setTitulo(String titulo) { this.titulo = titulo; }
     public String getDescDetalhada() { return descDetalhada; }

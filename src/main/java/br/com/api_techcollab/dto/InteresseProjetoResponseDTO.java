@@ -1,14 +1,19 @@
 package br.com.api_techcollab.dto;
 
 import br.com.api_techcollab.model.enums.StatusInteresse;
+import java.util.ArrayList;
+import java.util.List;
 
 public class InteresseProjetoResponseDTO {
     private Long id;
     private ProfissionalSimpleResponseDTO profissional;
     private VagaProjetoSimpleResponseDTO vagaProjeto;
-    private ProjetoSimpleResponseDTO projeto; // DTO Simples do Projeto
+    private ProjetoSimpleResponseDTO projeto;
     private StatusInteresse statusInteresse;
     private String mensagemMotivacao;
+
+    // MODIFICAÇÃO: Lista de links customizados
+    private List<CustomLink> links = new ArrayList<>();
 
     public InteresseProjetoResponseDTO() {}
 
@@ -25,4 +30,8 @@ public class InteresseProjetoResponseDTO {
     public void setStatusInteresse(StatusInteresse statusInteresse) { this.statusInteresse = statusInteresse; }
     public String getMensagemMotivacao() { return mensagemMotivacao; }
     public void setMensagemMotivacao(String mensagemMotivacao) { this.mensagemMotivacao = mensagemMotivacao; }
+
+    // MODIFICAÇÃO: Getter e Setter para os links
+    public List<CustomLink> getLinks() { return links; }
+    public void setLinks(List<CustomLink> links) { this.links = links; }
 }

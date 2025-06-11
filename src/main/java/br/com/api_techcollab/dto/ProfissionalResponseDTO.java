@@ -2,12 +2,11 @@ package br.com.api_techcollab.dto;
 
 import br.com.api_techcollab.model.enums.NivelExperiencia;
 import br.com.api_techcollab.model.enums.TiposUsuarios;
-import org.springframework.hateoas.RepresentationModel;
-
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class ProfissionalResponseDTO extends RepresentationModel<ProfissionalResponseDTO> {
+public class ProfissionalResponseDTO {
 
     private Long id;
     private String nome;
@@ -18,9 +17,12 @@ public class ProfissionalResponseDTO extends RepresentationModel<ProfissionalRes
     private NivelExperiencia nivelExperiencia;
     private String curriculoUrl;
 
+    // MODIFICAÇÃO: Lista de links customizados
+    private List<CustomLink> links = new ArrayList<>();
+
     public ProfissionalResponseDTO() {}
 
-    // Getters e Setters
+    // Getters e Setters existentes...
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getNome() { return nome; }
@@ -37,4 +39,8 @@ public class ProfissionalResponseDTO extends RepresentationModel<ProfissionalRes
     public void setNivelExperiencia(NivelExperiencia nivelExperiencia) { this.nivelExperiencia = nivelExperiencia; }
     public String getCurriculoUrl() { return curriculoUrl; }
     public void setCurriculoUrl(String curriculoUrl) { this.curriculoUrl = curriculoUrl; }
+
+    // MODIFICAÇÃO: Getter e Setter para os links
+    public List<CustomLink> getLinks() { return links; }
+    public void setLinks(List<CustomLink> links) { this.links = links; }
 }

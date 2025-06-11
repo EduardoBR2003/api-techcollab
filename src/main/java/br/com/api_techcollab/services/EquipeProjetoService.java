@@ -1,5 +1,8 @@
 package br.com.api_techcollab.services;
 
+import br.com.api_techcollab.controller.EquipeProjetoController;
+import br.com.api_techcollab.controller.ProjetoController;
+import br.com.api_techcollab.dto.CustomLink;
 import br.com.api_techcollab.dto.EquipeProjetoResponseDTO;
 import br.com.api_techcollab.dto.MembroEquipeResponseDTO;
 import br.com.api_techcollab.dto.ProfissionalSimpleResponseDTO;
@@ -21,6 +24,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Service
 public class EquipeProjetoService {
@@ -47,7 +53,7 @@ public class EquipeProjetoService {
 
 
     // Método para mapear para EquipeProjetoResponseDTO
-    private EquipeProjetoResponseDTO toResponseDTO(EquipeProjeto equipe, List<MembroEquipe> membros) {
+    private EquipeProjetoResponseDTO toResponseDTOWithLinks(EquipeProjeto equipe, List<MembroEquipe> membros) {
         EquipeProjetoResponseDTO dto = DataMapper.parseObject(equipe, EquipeProjetoResponseDTO.class);
         if (equipe.getProjeto() != null) {
             dto.setProjetoId(equipe.getProjeto().getId());
@@ -58,12 +64,21 @@ public class EquipeProjetoService {
                 if (membro.getProfissional() != null) {
                     Profissional prof = membro.getProfissional();
                     membroDto.setProfissional(new ProfissionalSimpleResponseDTO(prof.getId(), prof.getNome(), prof.getEmail()));
+                    // Adicionar link para o perfil do profissional dentro do membro da equipe
+                    // membroDto.getLinks().add(new CustomLink("perfil_profissional", ...)); // (Opcional, se MembroEquipeResponseDTO tiver a lista de links)
                 }
                 return membroDto;
             }).collect(Collectors.toList()));
         } else {
             dto.setMembros(Collections.emptyList());
         }
+
+        // Adicionando links ao DTO principal da equipe
+        Long projetoId = equipe.getProjeto().getId();
+        dto.getLinks().add(new CustomLink("self", linkTo(methodOn(EquipeProjetoController.class).visualizarEquipeProjeto(projetoId)).withSelfRel().getHref(), "GET"));
+        dto.getLinks().add(new CustomLink("projeto", linkTo(methodOn(ProjetoController.class).buscarProjetoPorId(projetoId)).withSelfRel().getHref(), "GET"));
+        dto.getLinks().add(new CustomLink("montar_equipe", linkTo(methodOn(EquipeProjetoController.class).montarEquipe(projetoId, null)).withSelfRel().getHref(), "POST"));
+
         return dto;
     }
 
@@ -129,7 +144,7 @@ public class EquipeProjetoService {
         verificarCompletudeEquipeEAtualizarProjeto(projetoId);
 
         List<MembroEquipe> membros = membroEquipeRepository.findByEquipeProjetoId(equipe.getId());
-        return toResponseDTO(equipe, membros);
+        return toResponseDTOWithLinks(equipe, membros);
     }
 
     // Método interno chamado pelo InteresseProjetoService quando um profissional aceita
@@ -219,24 +234,21 @@ public class EquipeProjetoService {
     public EquipeProjetoResponseDTO visualizarEquipeProjeto(Long projetoId) {
         logger.info("Visualizando equipe do projeto ID: " + projetoId);
         Optional<EquipeProjeto> equipeOpt = equipeProjetoRepository.findByProjetoId(projetoId);
+
         if (equipeOpt.isEmpty()) {
-            // Se não há equipe, mas o projeto existe, pode retornar uma resposta indicando isso ou lançar exceção.
-            // Por ora, vamos assumir que pode não haver equipe ainda.
             if(!projetoRepository.existsById(projetoId)){
                 throw new ResourceNotFoundException("Projeto não encontrado com ID: " + projetoId);
             }
             logger.info("Nenhuma equipe formada para o projeto ID: " + projetoId);
-            // Poderia retornar um DTO vazio ou com informações do projeto indicando que não há equipe.
-            // Para simplificar, se não há equipe, retornamos null ou lançamos exceção se for esperado que sempre haja uma.
-            // Neste contexto, se a equipe é opcional até ser formada, podemos retornar um DTO default.
-            Projeto projeto = projetoRepository.findById(projetoId).get(); // Sabemos que existe
+            Projeto projeto = projetoRepository.findById(projetoId).get();
             EquipeProjeto equipePlaceholder = new EquipeProjeto();
             equipePlaceholder.setProjeto(projeto);
             equipePlaceholder.setNomeEquipe("Equipe não formada");
-            return toResponseDTO(equipePlaceholder, Collections.emptyList());
+            return toResponseDTOWithLinks(equipePlaceholder, Collections.emptyList());
         }
+
         EquipeProjeto equipe = equipeOpt.get();
         List<MembroEquipe> membros = membroEquipeRepository.findByEquipeProjetoId(equipe.getId());
-        return toResponseDTO(equipe, membros);
+        return toResponseDTOWithLinks(equipe, membros);
     }
 }

@@ -3,10 +3,20 @@ package br.com.api_techcollab.dto;
 import java.util.List;
 
 public class EquipeMontarDTO {
+
+    private Long empresaId; // ID da empresa que está montando a equipe
     private List<Long> idsInteressesSelecionados;
     private String nomeEquipeSugerido;
 
-    // Getters e Setters
+    // Getter e Setter para empresaId
+    public Long getEmpresaId() {
+        return empresaId;
+    }
+    public void setEmpresaId(Long empresaId) {
+        this.empresaId = empresaId;
+    }
+
+    // Getters e Setters existentes
     public List<Long> getIdsInteressesSelecionados() {
         return idsInteressesSelecionados;
     }

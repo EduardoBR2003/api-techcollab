@@ -14,17 +14,16 @@ public class EquipeProjetoController {
     @Autowired
     private EquipeProjetoService equipeProjetoService;
 
-    // [RF008] Empresa monta a equipe - Agora com empresaId para validação
-    @PostMapping("/empresa/{empresaId}")
+    // [RF008] Empresa monta a equipe - Refatorado
+    @PostMapping
     public ResponseEntity<EquipeProjetoResponseDTO> montarEquipe(
             @PathVariable Long projetoId,
-            @PathVariable Long empresaId,
             @RequestBody EquipeMontarDTO equipeMontarDTO) {
         EquipeProjetoResponseDTO equipeMontada = equipeProjetoService.montarEquipe(
                 projetoId,
                 equipeMontarDTO.getIdsInteressesSelecionados(),
                 equipeMontarDTO.getNomeEquipeSugerido(),
-                empresaId
+                equipeMontarDTO.getEmpresaId() // ID da empresa vem do DTO
         );
         return ResponseEntity.ok(equipeMontada);
     }

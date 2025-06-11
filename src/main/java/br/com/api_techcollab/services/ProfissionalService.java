@@ -1,23 +1,30 @@
 package br.com.api_techcollab.services;
 
+import br.com.api_techcollab.controller.InteresseProjetoController;
+import br.com.api_techcollab.controller.ProfissionalController;
+import br.com.api_techcollab.controller.ProjetoController;
+import br.com.api_techcollab.dto.CustomLink;
 import br.com.api_techcollab.dto.ProfissionalCreateDTO;
 import br.com.api_techcollab.dto.ProfissionalResponseDTO;
-import br.com.api_techcollab.exceptions.BusinessException; // Certifique-se que esta exceção existe
+import br.com.api_techcollab.exceptions.BusinessException;
 import br.com.api_techcollab.exceptions.ResourceNotFoundException;
 import br.com.api_techcollab.mapper.DataMapper;
 import br.com.api_techcollab.model.Profissional;
 import br.com.api_techcollab.model.enums.StatusInteresse;
-import br.com.api_techcollab.repository.InteresseProjetoRepository; // Para verificar interesses
-import br.com.api_techcollab.repository.MembroEquipeRepository;   // Para verificar se é membro de equipe
+import br.com.api_techcollab.repository.InteresseProjetoRepository;
+import br.com.api_techcollab.repository.MembroEquipeRepository;
 import br.com.api_techcollab.repository.ProfissionalRepository;
-import br.com.api_techcollab.repository.UsuarioRepository;       // Para verificar email único
+import br.com.api_techcollab.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // Importar Transactional
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Service
 public class ProfissionalService {
@@ -28,32 +35,52 @@ public class ProfissionalService {
     private ProfissionalRepository profissionalRepository;
 
     @Autowired
-    private UsuarioRepository usuarioRepository; // Para checar e-mail
+    private UsuarioRepository usuarioRepository;
 
     @Autowired
-    private MembroEquipeRepository membroEquipeRepository; // Para checar se é membro de equipe
+    private MembroEquipeRepository membroEquipeRepository;
 
     @Autowired
-    private InteresseProjetoRepository interesseProjetoRepository; // Para checar interesses
+    private InteresseProjetoRepository interesseProjetoRepository;
 
     public List<ProfissionalResponseDTO> findAll() {
         logger.info("Buscando todos os profissionais...");
         var profissionais = profissionalRepository.findAll();
-        return DataMapper.parseListObjects(profissionais, ProfissionalResponseDTO.class);
+        var dtos = DataMapper.parseListObjects(profissionais, ProfissionalResponseDTO.class);
+
+        // MODIFICAÇÃO: Adicionar link 'self' a cada profissional na lista
+        dtos.forEach(dto -> {
+            try {
+                dto.getLinks().add(new CustomLink("self", linkTo(methodOn(ProfissionalController.class).findById(dto.getId())).withSelfRel().getHref(), "GET"));
+            } catch (Exception e) {
+                logger.warning("Erro ao gerar link HATEOAS para o profissional ID: " + dto.getId());
+            }
+        });
+
+        return dtos;
     }
 
     public ProfissionalResponseDTO findById(Long id) {
         logger.info("Buscando profissional pelo ID: " + id);
         var entity = profissionalRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Profissional não encontrado com o ID: " + id));
-        return DataMapper.parseObject(entity, ProfissionalResponseDTO.class);
+
+        ProfissionalResponseDTO dto = DataMapper.parseObject(entity, ProfissionalResponseDTO.class);
+
+        // MODIFICAÇÃO: Lógica HATEOAS Customizada
+        dto.getLinks().add(new CustomLink("self", linkTo(methodOn(ProfissionalController.class).findById(id)).withSelfRel().getHref(), "GET"));
+        dto.getLinks().add(new CustomLink("update", linkTo(methodOn(ProfissionalController.class).update(id, null)).withSelfRel().getHref(), "PUT"));
+        dto.getLinks().add(new CustomLink("delete", linkTo(methodOn(ProfissionalController.class).delete(id)).withSelfRel().getHref(), "DELETE"));
+        dto.getLinks().add(new CustomLink("meus_interesses", linkTo(methodOn(InteresseProjetoController.class).consultarStatusInteressesProfissional(id)).withSelfRel().getHref(), "GET"));
+        dto.getLinks().add(new CustomLink("projetos_disponiveis", linkTo(methodOn(ProjetoController.class).consultarProjetosDisponiveis()).withSelfRel().getHref(), "GET"));
+        dto.getLinks().add(new CustomLink("todos_os_profissionais", linkTo(methodOn(ProfissionalController.class).findAll()).withSelfRel().getHref(), "GET"));
+
+        return dto;
     }
 
     @Transactional
     public ProfissionalResponseDTO create(ProfissionalCreateDTO dto) {
         logger.info("Criando um novo profissional...");
-
-        // Validar email único
         if (usuarioRepository.findByEmail(dto.getEmail()).isPresent()) {
             throw new BusinessException("O e-mail informado já está em uso.");
         }
@@ -62,7 +89,9 @@ public class ProfissionalService {
         entity.setDataCadastro(new Date());
         var savedEntity = profissionalRepository.save(entity);
         logger.info("Profissional ID " + savedEntity.getId() + " criado com sucesso.");
-        return DataMapper.parseObject(savedEntity, ProfissionalResponseDTO.class);
+
+        // Retorna o DTO com os links HATEOAS
+        return findById(savedEntity.getId());
     }
 
     @Transactional
@@ -71,10 +100,9 @@ public class ProfissionalService {
         var entity = profissionalRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Profissional não encontrado com o ID: " + id));
 
-        // Validar e-mail se alterado
         if (!entity.getEmail().equals(dto.getEmail())) {
             usuarioRepository.findByEmail(dto.getEmail()).ifPresent(existingUser -> {
-                if (!existingUser.getId().equals(entity.getId())) { // Garante que não é o e-mail do próprio usuário
+                if (!existingUser.getId().equals(entity.getId())) {
                     throw new BusinessException("O novo e-mail informado já está em uso por outro usuário.");
                 }
             });
@@ -85,11 +113,12 @@ public class ProfissionalService {
         entity.setHabilidades(dto.getHabilidades());
         entity.setNivelExperiencia(dto.getNivelExperiencia());
         entity.setCurriculoUrl(dto.getCurriculoUrl());
-        // A senha pode ser atualizada em um método específico por segurança
 
         var updatedEntity = profissionalRepository.save(entity);
         logger.info("Profissional ID " + updatedEntity.getId() + " atualizado com sucesso.");
-        return DataMapper.parseObject(updatedEntity, ProfissionalResponseDTO.class);
+
+        // Retorna o DTO com os links HATEOAS
+        return findById(updatedEntity.getId());
     }
 
     @Transactional
@@ -98,10 +127,8 @@ public class ProfissionalService {
         var entity = profissionalRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Profissional não encontrado com o ID: " + id));
 
-        // Regra de Negócio: Verificar se o profissional está ativo em equipes ou tem interesses importantes.
-        long activeTeamMemberships = membroEquipeRepository.findAll().stream() // Melhorar consulta se possível
+        long activeTeamMemberships = membroEquipeRepository.findAll().stream()
                 .filter(membro -> membro.getProfissional().getId().equals(id))
-                // Adicionar lógica para verificar se a equipe/projeto ainda está ativo, se necessário
                 .count();
 
         if (activeTeamMemberships > 0) {
@@ -119,9 +146,6 @@ public class ProfissionalService {
             throw new BusinessException("Não é possível excluir o profissional pois ele possui " +
                     activeInterests + " interesse(s) ativo(s) em projetos.");
         }
-
-        // Alternativa: Implementar exclusão lógica (marcar como inativo) em vez de exclusão física.
-        // entity.setAtivo(false); profissionalRepository.save(entity);
 
         profissionalRepository.delete(entity);
         logger.info("Profissional com ID: " + id + " deletado com sucesso.");

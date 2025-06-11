@@ -30,21 +30,21 @@ public class ProjetoController {
         return ResponseEntity.ok(projeto);
     }
 
-    // [RF004] Editar Projeto - Agora com empresaId para validação
-    @PutMapping("/{projetoId}/empresa/{empresaId}")
+    // [RF004] Editar Projeto - Refatorado
+    @PutMapping("/{projetoId}")
     public ResponseEntity<ProjetoResponseDTO> editarProjeto(
             @PathVariable Long projetoId,
-            @PathVariable Long empresaId,
             @RequestBody ProjetoUpdateDTO projetoUpdateDTO) {
-        ProjetoResponseDTO projetoAtualizado = projetoService.editarProjeto(projetoId, projetoUpdateDTO, empresaId);
+        // A validação do ID da empresa agora é feita com o ID enviado no DTO
+        ProjetoResponseDTO projetoAtualizado = projetoService.editarProjeto(projetoId, projetoUpdateDTO, projetoUpdateDTO.getEmpresaId());
         return ResponseEntity.ok(projetoAtualizado);
     }
 
-    // [RF004] Excluir Projeto - Agora com empresaId para validação
-    @DeleteMapping("/{projetoId}/empresa/{empresaId}")
+    // [RF004] Excluir Projeto - Refatorado
+    @DeleteMapping("/{projetoId}")
     public ResponseEntity<Void> excluirProjeto(
             @PathVariable Long projetoId,
-            @PathVariable Long empresaId) {
+            @RequestParam Long empresaId) { // ID da empresa vem como parâmetro de consulta
         projetoService.excluirProjeto(projetoId, empresaId);
         return ResponseEntity.noContent().build();
     }

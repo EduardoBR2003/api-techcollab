@@ -31,19 +31,29 @@ public class VagaProjetoController {
         return ResponseEntity.ok(vagas);
     }
 
+    @GetMapping("/{vagaId}")
+    public ResponseEntity<VagaProjetoResponseDTO> getVaga(
+            @PathVariable Long projetoId,
+            @PathVariable Long vagaId) {
+        VagaProjetoResponseDTO vaga = vagaProjetoService.buscarVagaPorId(vagaId);
+        return ResponseEntity.ok(vaga);
+    }
+
     @PutMapping("/{vagaId}")
     public ResponseEntity<VagaProjetoResponseDTO> editarVaga(
+            @PathVariable Long projetoId,
             @PathVariable Long vagaId,
             @RequestBody VagaProjetoCreateDTO vagaCreateDTO) {
         VagaProjetoResponseDTO vagaAtualizada = vagaProjetoService.editarVagaProjeto(vagaId, vagaCreateDTO);
         return ResponseEntity.ok(vagaAtualizada);
     }
 
-    // Excluir uma Vaga - Agora com empresaId para validação
-    @DeleteMapping("/{vagaId}/empresa/{empresaId}")
+    // Excluir uma Vaga - Refatorado
+    @DeleteMapping("/{vagaId}")
     public ResponseEntity<Void> excluirVaga(
+            @PathVariable Long projetoId,
             @PathVariable Long vagaId,
-            @PathVariable Long empresaId) {
+            @RequestParam Long empresaId) {
         vagaProjetoService.excluirVagaProjeto(vagaId, empresaId);
         return ResponseEntity.noContent().build();
     }

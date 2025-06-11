@@ -1,11 +1,11 @@
 package br.com.api_techcollab.dto;
 
 import br.com.api_techcollab.model.enums.TiposUsuarios;
-import org.springframework.hateoas.RepresentationModel;
-
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
-public class EmpresaResponseDTO extends RepresentationModel<EmpresaResponseDTO> {
+public class EmpresaResponseDTO {
 
     private Long id;
     private String nome;
@@ -17,9 +17,12 @@ public class EmpresaResponseDTO extends RepresentationModel<EmpresaResponseDTO> 
     private String descEmpresa;
     private String siteUrl;
 
+    // MODIFICAÇÃO: Lista de links customizados
+    private List<CustomLink> links = new ArrayList<>();
+
     public EmpresaResponseDTO() {}
 
-    // Getters e Setters
+    // Getters e Setters existentes...
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getNome() { return nome; }
@@ -38,4 +41,8 @@ public class EmpresaResponseDTO extends RepresentationModel<EmpresaResponseDTO> 
     public void setDescEmpresa(String descEmpresa) { this.descEmpresa = descEmpresa; }
     public String getSiteUrl() { return siteUrl; }
     public void setSiteUrl(String siteUrl) { this.siteUrl = siteUrl; }
+
+    // MODIFICAÇÃO: Getter e Setter para os links
+    public List<CustomLink> getLinks() { return links; }
+    public void setLinks(List<CustomLink> links) { this.links = links; }
 }
