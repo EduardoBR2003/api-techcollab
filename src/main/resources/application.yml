@@ -5,7 +5,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/api_techcollab_database?useTimezone=true&serverTimezone=UTC
     username: root
-    password: admin123
+    password: 1234
   flyway:
     baseline-on-migrate: true
   jpa:
@@ -19,4 +19,19 @@ logging:
   level:
     #root: WARN
     br.com.eduardo: DEBUG
-
+  application:
+    name: api-techcollab
+  cache:
+    cache-names:
+      - empresasFindById,
+      - empresasFindAll,
+      - profissionaisFindById,
+      - profissionaisFindAll,
+      - projetosFindById,
+      - projetosFindAll,
+      - vagasFindById,
+      - vagasFindAll
+    caffeine:
+      spec: >
+        maximumSize=500,
+        expireAfterAccess=10m

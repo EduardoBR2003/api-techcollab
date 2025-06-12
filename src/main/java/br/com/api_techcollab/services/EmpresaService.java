@@ -12,6 +12,9 @@ import br.com.api_techcollab.repository.EmpresaRepository;
 import br.com.api_techcollab.repository.ProjetoRepository;
 import br.com.api_techcollab.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +39,7 @@ public class EmpresaService {
     @Autowired
     private ProjetoRepository projetoRepository;
 
+    @Cacheable("empresasFindAll")
     public List<EmpresaResponseDTO> findAll() {
         logger.info("Buscando todas as empresas...");
         var empresas = empresaRepository.findAll();
@@ -53,6 +57,7 @@ public class EmpresaService {
         return dtos;
     }
 
+    @Cacheable(value = "empresasFindById", key = "#id")
     public EmpresaResponseDTO findById(Long id) {
         logger.info("Buscando empresa pelo ID: " + id);
         var entity = empresaRepository.findById(id)
@@ -71,6 +76,7 @@ public class EmpresaService {
     }
 
     @Transactional
+    @CacheEvict(value = {"empresasFindAll", "empresasFindById"}, allEntries = true)
     public EmpresaResponseDTO create(EmpresaCreateDTO dto) {
         logger.info("Criando uma nova empresa...");
 
@@ -91,6 +97,8 @@ public class EmpresaService {
     }
 
     @Transactional
+    @CachePut(value = "empresasFindById", key = "#id")
+    @CacheEvict(value = "empresasFindAll", allEntries = true)
     public EmpresaResponseDTO update(Long id, EmpresaCreateDTO dto) {
         logger.info("Atualizando empresa com ID: " + id);
         var entity = empresaRepository.findById(id)
@@ -111,6 +119,7 @@ public class EmpresaService {
     }
 
     @Transactional
+    @CacheEvict(value = {"empresasFindAll", "empresasFindById"}, allEntries = true)
     public void delete(Long id) {
         logger.info("Tentando deletar empresa com ID: " + id);
         var entity = empresaRepository.findById(id)

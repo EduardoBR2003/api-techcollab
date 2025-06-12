@@ -16,6 +16,9 @@ import br.com.api_techcollab.repository.MembroEquipeRepository;
 import br.com.api_techcollab.repository.ProfissionalRepository;
 import br.com.api_techcollab.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +46,7 @@ public class ProfissionalService {
     @Autowired
     private InteresseProjetoRepository interesseProjetoRepository;
 
+    @Cacheable("profissionaisFindAll")
     public List<ProfissionalResponseDTO> findAll() {
         logger.info("Buscando todos os profissionais...");
         var profissionais = profissionalRepository.findAll();
@@ -60,6 +64,7 @@ public class ProfissionalService {
         return dtos;
     }
 
+    @Cacheable(value = "profissionaisFindById", key = "#id")
     public ProfissionalResponseDTO findById(Long id) {
         logger.info("Buscando profissional pelo ID: " + id);
         var entity = profissionalRepository.findById(id)
@@ -79,6 +84,7 @@ public class ProfissionalService {
     }
 
     @Transactional
+    @CacheEvict(value = {"profissionaisFindAll", "profissionaisFindById"}, allEntries = true)
     public ProfissionalResponseDTO create(ProfissionalCreateDTO dto) {
         logger.info("Criando um novo profissional...");
         if (usuarioRepository.findByEmail(dto.getEmail()).isPresent()) {
@@ -95,6 +101,8 @@ public class ProfissionalService {
     }
 
     @Transactional
+    @CachePut(value = "profissionaisFindById", key = "#id")
+    @CacheEvict(value = "profissionaisFindAll", allEntries = true)
     public ProfissionalResponseDTO update(Long id, ProfissionalCreateDTO dto) {
         logger.info("Atualizando profissional com ID: " + id);
         var entity = profissionalRepository.findById(id)
@@ -122,6 +130,7 @@ public class ProfissionalService {
     }
 
     @Transactional
+    @CacheEvict(value = {"profissionaisFindAll", "profissionaisFindById"}, allEntries = true)
     public void delete(Long id) {
         logger.info("Tentando deletar profissional com ID: " + id);
         var entity = profissionalRepository.findById(id)
