@@ -16,6 +16,9 @@ import br.com.api_techcollab.repository.EmpresaRepository;
 import br.com.api_techcollab.repository.ProjetoRepository;
 import br.com.api_techcollab.repository.VagaProjetoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +44,7 @@ public class ProjetoService {
     private VagaProjetoRepository vagaProjetoRepository; // Para limpar vagas
 
     @Transactional
+    @CacheEvict(value = {"projetosFindAll", "projetosFindById"}, allEntries = true)
     public ProjetoResponseDTO criarProjeto(ProjetoCreateDTO dto, Long empresaId) {
         logger.info("Criando novo projeto para empresa ID: " + empresaId);
         Empresa empresa = empresaRepository.findById(empresaId)
@@ -56,6 +60,8 @@ public class ProjetoService {
     }
 
     @Transactional
+    @CachePut(value = "projetosFindById", key = "#projetoId")
+    @CacheEvict(value = "projetosFindAll", allEntries = true)
     public ProjetoResponseDTO editarProjeto(Long projetoId, ProjetoUpdateDTO dto, Long empresaIdAutenticada) {
         logger.info("Editando projeto ID: " + projetoId + " pela empresa ID: " + empresaIdAutenticada);
         Projeto projeto = projetoRepository.findById(projetoId)
@@ -80,6 +86,7 @@ public class ProjetoService {
     }
 
     @Transactional
+    @CacheEvict(value = {"projetosFindAll", "projetosFindById", "vagasFindAll", "vagasFindById"}, allEntries = true)
     public void excluirProjeto(Long projetoId, Long empresaIdAutenticada) {
         logger.info("Excluindo projeto ID: " + projetoId + " pela empresa ID: " + empresaIdAutenticada);
         Projeto projeto = projetoRepository.findById(projetoId)
@@ -106,6 +113,7 @@ public class ProjetoService {
         logger.info("Projeto ID " + projetoId + " excluído com sucesso.");
     }
 
+    @Cacheable("projetosFindAll")
     public List<ProjetoResponseDTO> consultarProjetosDisponiveis() {
         logger.info("Consultando projetos disponíveis");
         List<Projeto> projetos = projetoRepository.findAll().stream()
@@ -126,6 +134,7 @@ public class ProjetoService {
         return projetosDTO;
     }
 
+    @Cacheable(value = "projetosFindAll", key = "#empresaId")
     public List<ProjetoResponseDTO> consultarProjetosPorEmpresa(Long empresaId) {
         logger.info("Consultando projetos da empresa ID: " + empresaId);
         if (!empresaRepository.existsById(empresaId)) {
@@ -141,6 +150,7 @@ public class ProjetoService {
 
     // Método para atualizar status do projeto, usado por outros services
     @Transactional
+    @CacheEvict(value = {"projetosFindAll", "projetosFindById"}, allEntries = true)
     public void atualizarStatusProjeto(Long projetoId, StatusProjeto novoStatus) {
         Projeto projeto = projetoRepository.findById(projetoId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projeto não encontrado com ID: " + projetoId));
@@ -149,6 +159,7 @@ public class ProjetoService {
         logger.info("Status do Projeto ID " + projetoId + " atualizado para " + novoStatus);
     }
 
+    @Cacheable(value = "projetosFindById", key = "#projetoId")
     public ProjetoResponseDTO buscarProjetoPorId(Long projetoId) {
         logger.info("Buscando projeto por ID: " + projetoId);
         Projeto projeto = projetoRepository.findById(projetoId)

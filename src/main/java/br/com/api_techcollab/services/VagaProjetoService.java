@@ -16,6 +16,9 @@ import br.com.api_techcollab.repository.InteresseProjetoRepository;
 import br.com.api_techcollab.repository.ProjetoRepository;
 import br.com.api_techcollab.repository.VagaProjetoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,6 +59,7 @@ public class VagaProjetoService {
         return dto;
     }
 
+    @Cacheable(value = "vagasFindAll", key = "#projetoId")
     public List<VagaProjetoResponseDTO> listarVagasPorProjeto(Long projetoId) {
         logger.info("Listando vagas do projeto ID: " + projetoId);
         if (!projetoRepository.existsById(projetoId)) {
@@ -69,6 +73,7 @@ public class VagaProjetoService {
     }
 
     // MODIFICAÇÃO: Novo método para buscar uma única vaga e adicionar links
+    @Cacheable(value = "vagasFindById", key = "#vagaId")
     public VagaProjetoResponseDTO buscarVagaPorId(Long vagaId) {
         VagaProjeto vaga = vagaProjetoRepository.findById(vagaId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vaga não encontrada com ID: " + vagaId));
@@ -76,6 +81,7 @@ public class VagaProjetoService {
     }
 
     @Transactional
+    @CacheEvict(value = {"vagasFindAll", "vagasFindById"}, allEntries = true)
     public VagaProjetoResponseDTO criarVagaParaProjeto(Long projetoId, VagaProjetoCreateDTO vagaCreateDTO) {
         Projeto projeto = projetoRepository.findById(projetoId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projeto não encontrado com ID: " + projetoId));
@@ -94,6 +100,8 @@ public class VagaProjetoService {
     }
 
     @Transactional
+    @CachePut(value = "vagasFindById", key = "#vagaId")
+    @CacheEvict(value = "vagasFindAll", allEntries = true)
     public VagaProjetoResponseDTO editarVagaProjeto(Long vagaId, VagaProjetoCreateDTO vagaCreateDTO) {
         VagaProjeto vaga = vagaProjetoRepository.findById(vagaId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vaga não encontrada com ID: " + vagaId));
@@ -121,6 +129,7 @@ public class VagaProjetoService {
     }
 
     @Transactional
+    @CacheEvict(value = {"vagasFindAll", "vagasFindById"}, allEntries = true)
     public void excluirVagaProjeto(Long vagaId, Long empresaIdAutenticada) {
         logger.info("Excluindo vaga ID: " + vagaId + " pela empresa ID: " + empresaIdAutenticada);
         VagaProjeto vaga = vagaProjetoRepository.findById(vagaId)
