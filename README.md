@@ -33,6 +33,7 @@ Este projeto foi construído com as seguintes tecnologias:
     * **Spring Data JPA** (Hibernate) para persistência de dados.
     * **Spring Web** para a construção da API REST.
     * **Spring HATEOAS** para a implementação de hipermídia.
+    * **Caffeine Cache** para gerenciamento de cache de alta performance.
 * **Banco de Dados**:
     * **MySQL**
     * **Flyway** para o versionamento e migração do schema do banco de dados.
