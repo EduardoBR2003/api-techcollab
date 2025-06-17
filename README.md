@@ -29,7 +29,7 @@ Este projeto foi construído com as seguintes tecnologias:
 
 * **Backend**:
     * **Java 21**
-    * **Spring Boot 3.3.0**
+    * **Spring Boot 3.4.6**
     * **Spring Data JPA** (Hibernate) para persistência de dados.
     * **Spring Web** para a construção da API REST.
     * **Spring HATEOAS** para a implementação de hipermídia.
