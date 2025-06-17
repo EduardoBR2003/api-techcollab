@@ -102,7 +102,7 @@ A API estará rodando em `http://localhost:8080`.
 
 Com a aplicação em execução, você pode acessar a documentação interativa da API gerada pelo Swagger. Ela permite visualizar todos os endpoints, testá-los e ver os modelos de dados.
 
-➡️ **Acesse a UI do Swagger em:** [**http://localhost:8080/swagger-ui.html**](https://www.google.com/search?q=http://localhost:8080/swagger-ui.html)
+➡️ **Acesse a UI do Swagger em:** [**http://localhost:8080/swagger-ui.html**](http://localhost:8080/swagger-ui.html)
 
 -----
 
