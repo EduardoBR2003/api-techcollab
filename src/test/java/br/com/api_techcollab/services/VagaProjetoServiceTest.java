@@ -99,7 +99,7 @@ public class VagaProjetoServiceTest {
     @Test
     @DisplayName("Deve excluir uma vaga com sucesso")
     void testExcluirVagaProjeto_Success() {
-        // Configura os mocks para simular a exclusão bem-sucedida de uma vaga sem interesses ativos.
+        // Configuraa os mocks para simular a exclusão bem-sucedida de uma vaga sem interesses ativos.
         when(vagaProjetoRepository.findById(100L)).thenReturn(Optional.of(vaga));
         when(interesseProjetoRepository.findByVagaProjetoId(100L)).thenReturn(Collections.emptyList()); // Simula que não há interesses na vaga
 
