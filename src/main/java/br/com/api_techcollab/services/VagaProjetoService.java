@@ -11,6 +11,7 @@ import br.com.api_techcollab.exceptions.ResourceNotFoundException;
 import br.com.api_techcollab.mapper.DataMapper;
 import br.com.api_techcollab.model.Projeto;
 import br.com.api_techcollab.model.VagaProjeto;
+import br.com.api_techcollab.model.enums.StatusInteresse;
 import br.com.api_techcollab.model.enums.StatusProjeto;
 import br.com.api_techcollab.repository.InteresseProjetoRepository;
 import br.com.api_techcollab.repository.ProjetoRepository;
@@ -140,9 +141,9 @@ public class VagaProjetoService {
         }
 
         long countInteressesAtivos = interesseProjetoRepository.findByVagaProjetoId(vagaId).stream()
-                .filter(i -> i.getStatusInteresse() == br.com.api_techcollab.model.enums.StatusInteresse.PENDENTE ||
-                        i.getStatusInteresse() == br.com.api_techcollab.model.enums.StatusInteresse.SELECIONADO ||
-                        i.getStatusInteresse() == br.com.api_techcollab.model.enums.StatusInteresse.ALOCADO)
+                .filter(i -> i.getStatusInteresse() == StatusInteresse.PENDENTE ||
+                        i.getStatusInteresse() == StatusInteresse.SELECIONADO ||
+                        i.getStatusInteresse() == StatusInteresse.ALOCADO)
                 .count();
 
         if (countInteressesAtivos > 0) {
