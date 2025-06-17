@@ -26,24 +26,24 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class EmpresaServiceTest {
 
-    @Mock
+    @Mock // Cria um mock do EmpresaRepository.
     private EmpresaRepository empresaRepository;
 
-    @Mock
+    @Mock // Cria um mock do UsuarioRepository.
     private UsuarioRepository usuarioRepository;
 
-    @Mock
+    @Mock // Cria um mock do ProjetoRepository.
     private ProjetoRepository projetoRepository;
 
-    @InjectMocks
+    @InjectMocks // Injeta os mocks no EmpresaService.
     private EmpresaService empresaService;
 
     private Empresa empresa;
     private EmpresaCreateDTO empresaCreateDTO;
 
-    @BeforeEach
+    @BeforeEach // Executado antes de cada método de teste.
     void setUp() {
-        // Objeto Empresa que será usado como retorno dos mocks
+        // Inicializa uma entidade Empresa de teste.
         empresa = new Empresa();
         empresa.setId(1L);
         empresa.setNome("Empresa Teste");
@@ -51,7 +51,7 @@ public class EmpresaServiceTest {
         empresa.setCnpj("11.222.333/0001-44");
         empresa.setRazaoSocial("Empresa Teste LTDA");
 
-        // DTO para criação de empresa
+        // Inicializa um DTO para criação de empresa.
         empresaCreateDTO = new EmpresaCreateDTO();
         empresaCreateDTO.setNome("Empresa Nova");
         empresaCreateDTO.setEmail("nova@empresa.com");
@@ -59,19 +59,16 @@ public class EmpresaServiceTest {
         empresaCreateDTO.setSenha("senha123");
     }
 
-    @Test
-    @DisplayName("Deve retornar uma empresa quando o ID for válido")
+    @Test // Marca o método como um teste.
+    @DisplayName("Deve retornar uma empresa quando o ID for válido") // Nome amigável para o teste.
     void testFindById_Success() {
-        // Arrange (Organizar)
-        // Quando o método findById do repositório for chamado com 1L, retorne nossa empresa de teste.
+        // Configura o mock do repositório para retornar a empresa de teste quando findById for chamado com o ID 1L.
         when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
 
-        // Act (Agir)
-        // Chama o método do service que queremos testar.
+        // Executa o método do serviço que queremos testar.
         EmpresaResponseDTO result = empresaService.findById(1L);
 
-        // Assert (Verificar)
-        // Verifica se o resultado não é nulo e se os dados correspondem.
+        // Verifica se o resultado não é nulo, se os dados correspondem e se contém links HATEOAS.
         assertNotNull(result);
         assertEquals("Empresa Teste", result.getNome());
         assertEquals(1L, result.getId());
@@ -81,12 +78,10 @@ public class EmpresaServiceTest {
     @Test
     @DisplayName("Deve lançar ResourceNotFoundException quando o ID for inválido")
     void testFindById_NotFound() {
-        // Arrange
-        // Quando o findById for chamado com um ID que não existe (2L), retorne um Optional vazio.
+        // Configura o mock para retornar um Optional vazio quando findById for chamado com um ID que não existe.
         when(empresaRepository.findById(2L)).thenReturn(Optional.empty());
 
-        // Act & Assert
-        // Verifica se a exceção correta é lançada ao chamar o método.
+        // Verifica se a exceção ResourceNotFoundException é lançada ao chamar o método.
         assertThrows(ResourceNotFoundException.class, () -> {
             empresaService.findById(2L);
         });
@@ -95,38 +90,36 @@ public class EmpresaServiceTest {
     @Test
     @DisplayName("Deve criar uma nova empresa com sucesso")
     void testCreate_Success() {
-        // Arrange
-        // Garante que não existe usuário com o mesmo email ou cnpj
+        // Garante que não existe usuário com o mesmo email ou CNPJ no sistema.
         when(usuarioRepository.findByEmail(anyString())).thenReturn(Optional.empty());
         when(empresaRepository.findByCnpj(anyString())).thenReturn(Optional.empty());
 
-        // Simula a empresa sendo salva e retornada com um ID
+        // Simula a empresa sendo salva e retornada com um ID.
         Empresa empresaSalva = new Empresa();
         empresaSalva.setId(2L);
         empresaSalva.setNome(empresaCreateDTO.getNome());
 
         when(empresaRepository.save(any(Empresa.class))).thenReturn(empresaSalva);
-        // O findById é chamado no final do create para adicionar os links HATEOAS
+        // O findById é chamado no final do método create para adicionar os links HATEOAS.
         when(empresaRepository.findById(2L)).thenReturn(Optional.of(empresaSalva));
 
-
-        // Act
+        // Executa o método do serviço.
         EmpresaResponseDTO result = empresaService.create(empresaCreateDTO);
 
-        // Assert
+        // Verifica se o resultado não é nulo, se o nome e o ID correspondem e se o método save foi chamado.
         assertNotNull(result);
         assertEquals("Empresa Nova", result.getNome());
         assertEquals(2L, result.getId());
-        verify(empresaRepository, times(1)).save(any(Empresa.class)); // Verifica se o save foi chamado 1 vez.
+        verify(empresaRepository, times(1)).save(any(Empresa.class));
     }
 
     @Test
     @DisplayName("Deve lançar BusinessException ao tentar criar empresa com email já existente")
     void testCreate_EmailAlreadyExists() {
-        // Arrange
+        // Configura o mock para simular que um usuário com o email já existe.
         when(usuarioRepository.findByEmail("nova@empresa.com")).thenReturn(Optional.of(new Empresa()));
 
-        // Act & Assert
+        // Verifica se a exceção BusinessException é lançada ao tentar criar a empresa.
         BusinessException exception = assertThrows(BusinessException.class, () -> {
             empresaService.create(empresaCreateDTO);
         });
@@ -137,34 +130,32 @@ public class EmpresaServiceTest {
     @Test
     @DisplayName("Deve deletar uma empresa que não possui projetos")
     void testDelete_Success() {
-        // Arrange
+        // Configura o mock para encontrar a empresa pelo ID e simular que não há projetos associados.
         when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
-        // Simula que não há projetos para esta empresa
         when(projetoRepository.findByEmpresaId(1L)).thenReturn(Collections.emptyList());
-        // Configura o mock para não fazer nada quando o delete for chamado
+        // Configura o mock para não fazer nada quando o delete for chamado.
         doNothing().when(empresaRepository).delete(any(Empresa.class));
 
-        // Act & Assert
-        // Verifica que nenhuma exceção é lançada
+        // Verifica que nenhuma exceção é lançada ao deletar a empresa.
         assertDoesNotThrow(() -> empresaService.delete(1L));
-        // Verifica se o método delete foi efetivamente chamado no repositório
+        // Verifica se o método delete foi efetivamente chamado no repositório.
         verify(empresaRepository, times(1)).delete(empresa);
     }
 
     @Test
     @DisplayName("Deve lançar BusinessException ao tentar deletar empresa com projetos associados")
     void testDelete_WithAssociatedProjects_ShouldThrowException() {
-        // Arrange
+        // Configura o mock para simular que a empresa possui projetos associados.
         when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
-        // Simula que a empresa TEM projetos associados
         when(projetoRepository.findByEmpresaId(1L)).thenReturn(Collections.singletonList(new br.com.api_techcollab.model.Projeto()));
 
-        // Act & Assert
+        // Verifica se a exceção BusinessException é lançada ao tentar deletar a empresa.
         BusinessException exception = assertThrows(BusinessException.class, () -> {
             empresaService.delete(1L);
         });
 
         assertTrue(exception.getMessage().contains("Não é possível excluir a empresa pois ela possui"));
-        verify(empresaRepository, never()).delete(any(Empresa.class)); // Verifica que o delete NUNCA foi chamado.
+        // Verifica que o método delete NUNCA foi chamado no repositório.
+        verify(empresaRepository, never()).delete(any(Empresa.class));
     }
 }

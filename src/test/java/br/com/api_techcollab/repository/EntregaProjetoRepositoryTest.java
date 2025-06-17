@@ -1,4 +1,3 @@
-// src/test/java/br/com/api_techcollab/repository/EntregaProjetoRepositoryTest.java
 package br.com.api_techcollab.repository;
 
 import br.com.api_techcollab.model.EntregaProjeto;
@@ -22,15 +21,16 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class EntregaProjetoRepositoryTest {
 
-    @Mock
+    @Mock // Cria um mock do EntregaProjetoRepository.
     private EntregaProjetoRepository entregaProjetoRepository;
 
     private Projeto projeto;
     private EntregaProjeto entrega1;
     private EntregaProjeto entrega2;
 
-    @BeforeEach
+    @BeforeEach // Executado antes de cada método de teste.
     void setUp() {
+        // Inicializa as entidades de teste.
         Empresa empresa = new Empresa();
         empresa.setId(1L);
 
@@ -54,17 +54,17 @@ public class EntregaProjetoRepositoryTest {
         entrega2.setDataSubmissao(new Date());
     }
 
-    @Test
-    @DisplayName("Deve encontrar entregas por ID de projeto")
+    @Test // Marca o método como um teste.
+    @DisplayName("Deve encontrar entregas por ID de projeto") // Nome amigável para o teste.
     void findByProjetoId_ShouldReturnEntregas() {
-        // Arrange
+        // Configura o mock do repositório para retornar uma lista de entregas quando findByProjetoId for chamado com o ID do projeto.
         List<EntregaProjeto> entregasDoProjeto = Arrays.asList(entrega1, entrega2);
         when(entregaProjetoRepository.findByProjetoId(projeto.getId())).thenReturn(entregasDoProjeto);
 
-        // Act
+        // Executa o método do repositório.
         List<EntregaProjeto> foundEntregas = entregaProjetoRepository.findByProjetoId(projeto.getId());
 
-        // Assert
+        // Verifica se a lista não é nula, não está vazia, tem o tamanho esperado e contém as entregas corretas.
         assertNotNull(foundEntregas);
         assertFalse(foundEntregas.isEmpty());
         assertEquals(2, foundEntregas.size());
@@ -75,14 +75,14 @@ public class EntregaProjetoRepositoryTest {
     @Test
     @DisplayName("Deve retornar lista vazia para projeto sem entregas")
     void findByProjetoId_ShouldReturnEmptyList_WhenNoEntregas() {
-        // Arrange
+        // Configura o mock do repositório para retornar uma lista vazia quando findByProjetoId for chamado com um ID de projeto inexistente.
         Long nonExistentProjetoId = 99L;
         when(entregaProjetoRepository.findByProjetoId(nonExistentProjetoId)).thenReturn(Arrays.asList());
 
-        // Act
+        // Executa o método do repositório.
         List<EntregaProjeto> foundEntregas = entregaProjetoRepository.findByProjetoId(nonExistentProjetoId);
 
-        // Assert
+        // Verifica se a lista não é nula e está vazia.
         assertNotNull(foundEntregas);
         assertTrue(foundEntregas.isEmpty());
     }

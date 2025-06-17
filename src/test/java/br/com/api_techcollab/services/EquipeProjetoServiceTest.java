@@ -1,4 +1,3 @@
-// src/test/java/br/com/api_techcollab/services/EquipeProjetoServiceTest.java
 package br.com.api_techcollab.services;
 
 import br.com.api_techcollab.dto.EquipeMontarDTO;
@@ -31,20 +30,20 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class EquipeProjetoServiceTest {
 
-    @Mock
+    @Mock // Cria um mock do EquipeProjetoRepository.
     private EquipeProjetoRepository equipeProjetoRepository;
-    @Mock
+    @Mock // Cria um mock do MembroEquipeRepository.
     private MembroEquipeRepository membroEquipeRepository;
-    @Mock
+    @Mock // Cria um mock do ProjetoRepository.
     private ProjetoRepository projetoRepository;
-    @Mock
-    private ProjetoService projetoService; // Mockar o serviço para não testar recursivamente
-    @Mock
+    @Mock // Cria um mock do ProjetoService (para evitar recursão e testar a integração).
+    private ProjetoService projetoService;
+    @Mock // Cria um mock do InteresseProjetoRepository.
     private InteresseProjetoRepository interesseProjetoRepository;
-    @Mock
+    @Mock // Cria um mock do VagaProjetoRepository.
     private VagaProjetoRepository vagaProjetoRepository;
 
-    @InjectMocks
+    @InjectMocks // Injeta os mocks no EquipeProjetoService.
     private EquipeProjetoService equipeProjetoService;
 
     private Empresa empresa;
@@ -59,9 +58,9 @@ public class EquipeProjetoServiceTest {
     private MembroEquipe membroEquipe;
     private EquipeMontarDTO equipeMontarDTO;
 
-    @BeforeEach
+    @BeforeEach // Executado antes de cada método de teste.
     void setUp() {
-        // Entidades base
+        // Inicializa as entidades base para os testes.
         empresa = new Empresa();
         empresa.setId(1L);
 
@@ -114,15 +113,17 @@ public class EquipeProjetoServiceTest {
         membroEquipe.setProfissional(profissional1);
         membroEquipe.setPapel("Desenvolvedor");
 
+        // Inicializa o DTO para montar equipe.
         equipeMontarDTO = new EquipeMontarDTO();
         equipeMontarDTO.setEmpresaId(empresa.getId());
         equipeMontarDTO.setIdsInteressesSelecionados(Arrays.asList(interesse1.getId(), interesse2.getId()));
         equipeMontarDTO.setNomeEquipeSugerido("Nova Equipe Top");
     }
 
-    @Test
-    @DisplayName("Deve montar equipe com sucesso, criando nova equipe")
+    @Test // Marca o método como um teste.
+    @DisplayName("Deve montar equipe com sucesso, criando nova equipe") // Nome amigável para o teste.
     void montarEquipe_NewTeam_Success() {
+        // Configura os mocks para simular o cenário de criação de uma nova equipe e adição de membros.
         when(projetoRepository.findById(projeto.getId())).thenReturn(Optional.of(projeto));
         when(equipeProjetoRepository.findByProjetoId(projeto.getId())).thenReturn(Optional.empty()); // Nenhuma equipe existente
         when(equipeProjetoRepository.save(any(EquipeProjeto.class))).thenReturn(equipeProjeto);
@@ -131,14 +132,16 @@ public class EquipeProjetoServiceTest {
         when(membroEquipeRepository.findByEquipeProjetoId(anyLong())).thenReturn(Collections.emptyList()); // Nenhum membro ainda
         when(membroEquipeRepository.save(any(MembroEquipe.class))).thenReturn(membroEquipe); // Salva o membro
         when(interesseProjetoRepository.save(any(InteresseProjeto.class))).thenReturn(interesse1); // Atualiza o interesse
-        doNothing().when(projetoService).atualizarStatusProjeto(anyLong(), any(StatusProjeto.class));
+        doNothing().when(projetoService).atualizarStatusProjeto(anyLong(), any(StatusProjeto.class)); // O serviço de projeto não faz nada
         when(vagaProjetoRepository.findByProjetoId(projeto.getId())).thenReturn(Arrays.asList(vagaProjeto1, vagaProjeto2));
         when(membroEquipeRepository.findByEquipeProjetoId(equipeProjeto.getId())).thenReturn(Arrays.asList(membroEquipe)); // Retorna membros após adição (simplificado)
 
+        // Executa o método do serviço.
         EquipeProjetoResponseDTO response = equipeProjetoService.montarEquipe(
                 projeto.getId(), equipeMontarDTO.getIdsInteressesSelecionados(),
                 equipeMontarDTO.getNomeEquipeSugerido(), equipeMontarDTO.getEmpresaId());
 
+        // Verifica se a resposta não é nula, se o nome da equipe corresponde e se os métodos de persistência e serviço foram chamados.
         assertNotNull(response);
         assertEquals("Nova Equipe Top", response.getNomeEquipe());
         verify(equipeProjetoRepository, times(1)).save(any(EquipeProjeto.class)); // Nova equipe criada
@@ -150,8 +153,10 @@ public class EquipeProjetoServiceTest {
     @Test
     @DisplayName("Deve lançar ResourceNotFoundException ao montar equipe para projeto não encontrado")
     void montarEquipe_ProjetoNotFound_ThrowsException() {
+        // Configura o mock para não encontrar o projeto.
         when(projetoRepository.findById(anyLong())).thenReturn(Optional.empty());
 
+        // Verifica se ResourceNotFoundException é lançada.
         assertThrows(ResourceNotFoundException.class, () ->
                 equipeProjetoService.montarEquipe(999L, equipeMontarDTO.getIdsInteressesSelecionados(),
                         equipeMontarDTO.getNomeEquipeSugerido(), equipeMontarDTO.getEmpresaId()));
@@ -160,12 +165,14 @@ public class EquipeProjetoServiceTest {
     @Test
     @DisplayName("Deve lançar AccessDeniedException ao empresa não autorizada tentar montar equipe")
     void montarEquipe_AccessDenied_ThrowsException() {
+        // Configura o mock para o projeto pertencer a outra empresa.
         Empresa outraEmpresa = new Empresa();
         outraEmpresa.setId(99L);
         projeto.setEmpresa(outraEmpresa); // Projeto pertence a outra empresa
 
         when(projetoRepository.findById(projeto.getId())).thenReturn(Optional.of(projeto));
 
+        // Verifica se AccessDeniedException é lançada quando uma empresa não autorizada tenta montar a equipe.
         assertThrows(AccessDeniedException.class, () ->
                 equipeProjetoService.montarEquipe(projeto.getId(), equipeMontarDTO.getIdsInteressesSelecionados(),
                         equipeMontarDTO.getNomeEquipeSugerido(), empresa.getId())); // Empresa errada tenta montar
@@ -174,16 +181,19 @@ public class EquipeProjetoServiceTest {
     @Test
     @DisplayName("Deve adicionar membro à equipe via interesse (método interno)")
     void adicionarMembroEquipePorInteresse_Success() {
+        // Configura o mock para o interesse estar no status ALOCADO e para encontrar a equipe e profissional.
         interesse1.setStatusInteresse(StatusInteresse.ALOCADO); // Interesse já alocado
         when(equipeProjetoRepository.findByProjetoId(projeto.getId())).thenReturn(Optional.of(equipeProjeto));
         when(membroEquipeRepository.findByEquipeProjetoId(equipeProjeto.getId())).thenReturn(Collections.emptyList()); // Membro não existe
-        when(membroEquipeRepository.save(any(MembroEquipe.class))).thenReturn(membroEquipe);
-        doNothing().when(projetoService).atualizarStatusProjeto(anyLong(), any(StatusProjeto.class));
+        when(membroEquipeRepository.save(any(MembroEquipe.class))).thenReturn(membroEquipe); // Salva o membro
+        doNothing().when(projetoService).atualizarStatusProjeto(anyLong(), any(StatusProjeto.class)); // O serviço de projeto não faz nada
         when(vagaProjetoRepository.findByProjetoId(projeto.getId())).thenReturn(Arrays.asList(vagaProjeto1, vagaProjeto2));
         when(membroEquipeRepository.findByEquipeProjetoId(equipeProjeto.getId())).thenReturn(Arrays.asList(membroEquipe)); // Simula membro adicionado
 
+        // Executa o método interno do serviço.
         equipeProjetoService.adicionarMembroEquipePorInteresse(interesse1);
 
+        // Verifica se os métodos de persistência e serviço foram chamados.
         verify(membroEquipeRepository, times(1)).save(any(MembroEquipe.class));
         verify(projetoService, times(2)).atualizarStatusProjeto(eq(projeto.getId()), any(StatusProjeto.class));
     }
@@ -191,21 +201,27 @@ public class EquipeProjetoServiceTest {
     @Test
     @DisplayName("Não deve adicionar membro se interesse não estiver ALOCADO")
     void adicionarMembroEquipePorInteresse_NotAllocated_ThrowsException() {
+        // Configura o mock para o interesse não estar no status ALOCADO.
         interesse1.setStatusInteresse(StatusInteresse.SELECIONADO); // Não é ALOCADO
 
+        // Verifica se BusinessException é lançada.
         assertThrows(BusinessException.class, () ->
                 equipeProjetoService.adicionarMembroEquipePorInteresse(interesse1));
+        // Verifica que o método save do membroEquipeRepository nunca foi chamado.
         verify(membroEquipeRepository, never()).save(any(MembroEquipe.class));
     }
 
     @Test
     @DisplayName("Deve visualizar equipe de projeto existente")
     void visualizarEquipeProjeto_ExistingTeam_Success() {
+        // Configura o mock para encontrar uma equipe existente e seus membros.
         when(equipeProjetoRepository.findByProjetoId(projeto.getId())).thenReturn(Optional.of(equipeProjeto));
         when(membroEquipeRepository.findByEquipeProjetoId(equipeProjeto.getId())).thenReturn(Collections.singletonList(membroEquipe));
 
+        // Executa o método do serviço.
         EquipeProjetoResponseDTO response = equipeProjetoService.visualizarEquipeProjeto(projeto.getId());
 
+        // Verifica se a resposta não é nula, se o ID da equipe corresponde e se contém membros.
         assertNotNull(response);
         assertEquals(equipeProjeto.getId(), response.getId());
         assertFalse(response.getMembros().isEmpty());
@@ -215,12 +231,15 @@ public class EquipeProjetoServiceTest {
     @Test
     @DisplayName("Deve visualizar equipe de projeto não formada, retornando placeholder")
     void visualizarEquipeProjeto_NoTeam_ReturnsPlaceholder() {
+        // Configura o mock para não encontrar uma equipe para o projeto, mas o projeto existe.
         when(equipeProjetoRepository.findByProjetoId(projeto.getId())).thenReturn(Optional.empty());
         when(projetoRepository.existsById(projeto.getId())).thenReturn(true); // Projeto existe
         when(projetoRepository.findById(projeto.getId())).thenReturn(Optional.of(projeto)); // Usado para o placeholder
 
+        // Executa o método do serviço.
         EquipeProjetoResponseDTO response = equipeProjetoService.visualizarEquipeProjeto(projeto.getId());
 
+        // Verifica se a resposta não é nula, se o ID da equipe é nulo (placeholder), e se o nome e a lista de membros são os esperados para um placeholder.
         assertNotNull(response);
         assertNull(response.getId()); // ID da equipe deve ser nulo para placeholder
         assertEquals("Equipe não formada", response.getNomeEquipe());
@@ -230,9 +249,11 @@ public class EquipeProjetoServiceTest {
     @Test
     @DisplayName("Deve lançar ResourceNotFoundException ao visualizar equipe de projeto inexistente")
     void visualizarEquipeProjeto_ProjetoNotFound_ThrowsException() {
+        // Configura o mock para não encontrar o projeto.
         when(equipeProjetoRepository.findByProjetoId(anyLong())).thenReturn(Optional.empty());
         when(projetoRepository.existsById(anyLong())).thenReturn(false); // Projeto não existe
 
+        // Verifica se ResourceNotFoundException é lançada ao tentar visualizar a equipe de um projeto que não existe.
         assertThrows(ResourceNotFoundException.class, () ->
                 equipeProjetoService.visualizarEquipeProjeto(999L));
     }

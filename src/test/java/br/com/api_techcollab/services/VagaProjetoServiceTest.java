@@ -30,14 +30,14 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class VagaProjetoServiceTest {
 
-    @Mock
+    @Mock // Cria um mock do VagaProjetoRepository.
     private VagaProjetoRepository vagaProjetoRepository;
-    @Mock
+    @Mock // Cria um mock do ProjetoRepository.
     private ProjetoRepository projetoRepository;
-    @Mock
+    @Mock // Cria um mock do InteresseProjetoRepository.
     private InteresseProjetoRepository interesseProjetoRepository;
 
-    @InjectMocks
+    @InjectMocks // Injeta os mocks no VagaProjetoService.
     private VagaProjetoService vagaProjetoService;
 
     private Projeto projeto;
@@ -46,8 +46,9 @@ public class VagaProjetoServiceTest {
     private Empresa empresa;
 
 
-    @BeforeEach
+    @BeforeEach // Executado antes de cada método de teste.
     void setUp() {
+        // Inicializa as entidades e DTOs de teste.
         empresa = new Empresa();
         empresa.setId(1L);
 
@@ -66,17 +67,17 @@ public class VagaProjetoServiceTest {
         vagaCreateDTO.setNivelExpDesejado(NivelExperiencia.PLENO);
     }
 
-    @Test
-    @DisplayName("Deve criar uma vaga para um projeto com sucesso")
+    @Test // Marca o método como um teste.
+    @DisplayName("Deve criar uma vaga para um projeto com sucesso") // Nome amigável para o teste.
     void testCriarVagaParaProjeto_Success() {
-        // Arrange
+        // Configura os mocks para simular a criação bem-sucedida de uma vaga.
         when(projetoRepository.findById(10L)).thenReturn(Optional.of(projeto));
         when(vagaProjetoRepository.save(any(VagaProjeto.class))).thenReturn(vaga);
 
-        // Act
+        // Executa o método do serviço.
         VagaProjetoResponseDTO result = vagaProjetoService.criarVagaParaProjeto(10L, vagaCreateDTO);
 
-        // Assert
+        // Verifica se o resultado não é nulo, se o título da vaga corresponde e se o método save foi chamado.
         assertNotNull(result);
         assertEquals("Desenvolvedor Java", result.getTituloVaga());
         verify(vagaProjetoRepository, times(1)).save(any(VagaProjeto.class));
@@ -85,11 +86,11 @@ public class VagaProjetoServiceTest {
     @Test
     @DisplayName("Deve lançar BusinessException ao tentar criar vaga em projeto concluído")
     void testCriarVagaParaProjeto_InvalidStatus() {
-        // Arrange
+        // Configura o mock para o projeto estar em status "CONCLUIDO".
         projeto.setStatusProjeto(StatusProjeto.CONCLUIDO);
         when(projetoRepository.findById(10L)).thenReturn(Optional.of(projeto));
 
-        // Act & Assert
+        // Verifica se BusinessException é lançada.
         assertThrows(BusinessException.class, () -> {
             vagaProjetoService.criarVagaParaProjeto(10L, vagaCreateDTO);
         });
@@ -98,26 +99,25 @@ public class VagaProjetoServiceTest {
     @Test
     @DisplayName("Deve excluir uma vaga com sucesso")
     void testExcluirVagaProjeto_Success() {
-        // Arrange
+        // Configura os mocks para simular a exclusão bem-sucedida de uma vaga sem interesses ativos.
         when(vagaProjetoRepository.findById(100L)).thenReturn(Optional.of(vaga));
-        // Simula que não há interesses na vaga
-        when(interesseProjetoRepository.findByVagaProjetoId(100L)).thenReturn(Collections.emptyList());
+        when(interesseProjetoRepository.findByVagaProjetoId(100L)).thenReturn(Collections.emptyList()); // Simula que não há interesses na vaga
 
-        // Act & Assert
+        // Verifica que nenhuma exceção é lançada.
         assertDoesNotThrow(() -> vagaProjetoService.excluirVagaProjeto(100L, 1L));
+        // Verifica se o método delete foi chamado.
         verify(vagaProjetoRepository, times(1)).delete(vaga);
     }
 
     @Test
     @DisplayName("Deve lançar AccessDeniedException ao tentar excluir vaga de outra empresa")
     void testExcluirVagaProjeto_AccessDenied() {
-        // Arrange
+        // Configura o mock para a vaga pertencer a um projeto de outra empresa.
         when(vagaProjetoRepository.findById(100L)).thenReturn(Optional.of(vaga));
 
-        // Act & Assert
-        // Empresa 2L tenta excluir a vaga que pertence ao projeto da empresa 1L
+        // Verifica se AccessDeniedException é lançada quando uma empresa não autorizada tenta excluir a vaga.
         assertThrows(AccessDeniedException.class, () -> {
-            vagaProjetoService.excluirVagaProjeto(100L, 2L);
+            vagaProjetoService.excluirVagaProjeto(100L, 2L); // Empresa 2L tenta excluir a vaga que pertence ao projeto da empresa 1L
         });
     }
 }

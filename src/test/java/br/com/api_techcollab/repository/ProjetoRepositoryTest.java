@@ -1,4 +1,3 @@
-// src/test/java/br/com/api_techcollab/repository/ProjetoRepositoryTest.java
 package br.com.api_techcollab.repository;
 
 import br.com.api_techcollab.model.Empresa;
@@ -19,15 +18,16 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class ProjetoRepositoryTest {
 
-    @Mock
+    @Mock // Cria um mock do ProjetoRepository.
     private ProjetoRepository projetoRepository;
 
     private Empresa empresa;
     private Projeto projeto1;
     private Projeto projeto2;
 
-    @BeforeEach
+    @BeforeEach // Executado antes de cada método de teste.
     void setUp() {
+        // Inicializa as entidades de teste.
         empresa = new Empresa();
         empresa.setId(1L);
         empresa.setNome("Empresa Teste SA");
@@ -43,17 +43,17 @@ public class ProjetoRepositoryTest {
         projeto2.setEmpresa(empresa);
     }
 
-    @Test
-    @DisplayName("Deve encontrar projetos por ID de empresa")
+    @Test // Marca o método como um teste.
+    @DisplayName("Deve encontrar projetos por ID de empresa") // Nome amigável para o teste.
     void findByEmpresaId_ShouldReturnProjetos() {
-        // Arrange
+        // Configura o mock do repositório para retornar uma lista de projetos quando findByEmpresaId for chamado.
         List<Projeto> projetosDaEmpresa = Arrays.asList(projeto1, projeto2);
         when(projetoRepository.findByEmpresaId(empresa.getId())).thenReturn(projetosDaEmpresa);
 
-        // Act
+        // Executa o método do repositório.
         List<Projeto> foundProjetos = projetoRepository.findByEmpresaId(empresa.getId());
 
-        // Assert
+        // Verifica se a lista não é nula, não está vazia, tem o tamanho esperado e contém os projetos corretos.
         assertNotNull(foundProjetos);
         assertFalse(foundProjetos.isEmpty());
         assertEquals(2, foundProjetos.size());
@@ -64,14 +64,15 @@ public class ProjetoRepositoryTest {
     @Test
     @DisplayName("Deve retornar lista vazia para empresa sem projetos")
     void findByEmpresaId_ShouldReturnEmptyList_WhenNoProjetos() {
-        // Arrange
+        // Define um ID de empresa que não existe.
         Long nonExistentEmpresaId = 99L;
+        // Configura o mock do repositório para retornar uma lista vazia quando findByEmpresaId for chamado com um ID inexistente.
         when(projetoRepository.findByEmpresaId(nonExistentEmpresaId)).thenReturn(Arrays.asList());
 
-        // Act
+        // Executa o método do repositório.
         List<Projeto> foundProjetos = projetoRepository.findByEmpresaId(nonExistentEmpresaId);
 
-        // Assert
+        // Verifica se a lista não é nula e está vazia.
         assertNotNull(foundProjetos);
         assertTrue(foundProjetos.isEmpty());
     }

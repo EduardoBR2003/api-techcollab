@@ -1,4 +1,3 @@
-// src/test/java/br/com/api_techcollab/repository/UsuarioRepositoryTest.java
 package br.com.api_techcollab.repository;
 
 import br.com.api_techcollab.model.Profissional;
@@ -20,14 +19,15 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class UsuarioRepositoryTest {
 
-    @Mock
+    @Mock // Cria um mock do UsuarioRepository.
     private UsuarioRepository usuarioRepository;
 
     private Usuario usuario;
 
-    @BeforeEach
+    @BeforeEach // Executado antes de cada método de teste.
     void setUp() {
-        usuario = new Profissional(); // Usando uma subclasse concreta de Usuario
+        // Inicializa uma entidade Usuario de teste (usando Profissional como subclasse concreta).
+        usuario = new Profissional();
         usuario.setId(1L);
         usuario.setNome("Usuario Teste");
         usuario.setEmail("usuario.teste@example.com");
@@ -36,17 +36,18 @@ public class UsuarioRepositoryTest {
         usuario.setDataCadastro(new Date());
     }
 
-    @Test
-    @DisplayName("Deve encontrar um usuário pelo email")
+    @Test // Marca o método como um teste.
+    @DisplayName("Deve encontrar um usuário pelo email") // Nome amigável para o teste.
     void findByEmail_ShouldReturnUsuario() {
-        // Arrange
+        // Define o email a ser buscado.
         String email = "usuario.teste@example.com";
+        // Configura o mock do repositório para retornar o usuário de teste quando findByEmail for chamado com o email.
         when(usuarioRepository.findByEmail(email)).thenReturn(Optional.of(usuario));
 
-        // Act
+        // Executa o método do repositório.
         Optional<Usuario> foundUsuario = usuarioRepository.findByEmail(email);
 
-        // Assert
+        // Verifica se o usuário foi encontrado e se o email corresponde.
         assertTrue(foundUsuario.isPresent());
         assertEquals(usuario.getEmail(), foundUsuario.get().getEmail());
     }
@@ -54,14 +55,15 @@ public class UsuarioRepositoryTest {
     @Test
     @DisplayName("Não deve encontrar usuário para email inexistente")
     void findByEmail_ShouldReturnEmptyOptional_WhenNotFound() {
-        // Arrange
+        // Define um email que não existe.
         String nonExistentEmail = "naoexiste@example.com";
+        // Configura o mock do repositório para retornar um Optional vazio quando findByEmail for chamado com o email inexistente.
         when(usuarioRepository.findByEmail(nonExistentEmail)).thenReturn(Optional.empty());
 
-        // Act
+        // Executa o método do repositório.
         Optional<Usuario> foundUsuario = usuarioRepository.findByEmail(nonExistentEmail);
 
-        // Assert
+        // Verifica se o usuário não foi encontrado.
         assertFalse(foundUsuario.isPresent());
     }
 }

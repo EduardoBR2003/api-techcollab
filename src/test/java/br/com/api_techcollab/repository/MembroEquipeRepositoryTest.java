@@ -1,4 +1,3 @@
-// src/test/java/br/com/api_techcollab/repository/MembroEquipeRepositoryTest.java
 package br.com.api_techcollab.repository;
 
 import br.com.api_techcollab.model.EquipeProjeto;
@@ -22,7 +21,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class MembroEquipeRepositoryTest {
 
-    @Mock
+    @Mock // Cria um mock do MembroEquipeRepository.
     private MembroEquipeRepository membroEquipeRepository;
 
     private EquipeProjeto equipeProjeto;
@@ -31,8 +30,9 @@ public class MembroEquipeRepositoryTest {
     private MembroEquipe membro1;
     private MembroEquipe membro2;
 
-    @BeforeEach
+    @BeforeEach // Executado antes de cada método de teste.
     void setUp() {
+        // Inicializa as entidades de teste.
         Projeto projeto = new Projeto();
         projeto.setId(1L);
 
@@ -64,17 +64,17 @@ public class MembroEquipeRepositoryTest {
         membro2.setDataEntrada(new Date());
     }
 
-    @Test
-    @DisplayName("Deve encontrar todos os membros de uma equipe específica")
+    @Test // Marca o método como um teste.
+    @DisplayName("Deve encontrar todos os membros de uma equipe específica") // Nome amigável para o teste.
     void findByEquipeProjetoId_ShouldReturnMembers() {
-        // Arrange
+        // Configura o mock do repositório para retornar uma lista de membros quando findByEquipeProjetoId for chamado.
         List<MembroEquipe> membrosDaEquipe = Arrays.asList(membro1, membro2);
         when(membroEquipeRepository.findByEquipeProjetoId(equipeProjeto.getId())).thenReturn(membrosDaEquipe);
 
-        // Act
+        // Executa o método do repositório.
         List<MembroEquipe> foundMembers = membroEquipeRepository.findByEquipeProjetoId(equipeProjeto.getId());
 
-        // Assert
+        // Verifica se a lista não é nula, não está vazia, tem o tamanho esperado e contém os membros corretos.
         assertNotNull(foundMembers);
         assertFalse(foundMembers.isEmpty());
         assertEquals(2, foundMembers.size());
@@ -85,14 +85,15 @@ public class MembroEquipeRepositoryTest {
     @Test
     @DisplayName("Deve retornar lista vazia para equipe sem membros")
     void findByEquipeProjetoId_ShouldReturnEmptyList_WhenNoMembers() {
-        // Arrange
+        // Define um ID de equipe que não existe.
         Long nonExistentEquipeId = 99L;
+        // Configura o mock do repositório para retornar uma lista vazia quando findByEquipeProjetoId for chamado com um ID inexistente.
         when(membroEquipeRepository.findByEquipeProjetoId(nonExistentEquipeId)).thenReturn(Arrays.asList());
 
-        // Act
+        // Executa o método do repositório.
         List<MembroEquipe> foundMembers = membroEquipeRepository.findByEquipeProjetoId(nonExistentEquipeId);
 
-        // Assert
+        // Verifica se a lista não é nula e está vazia.
         assertNotNull(foundMembers);
         assertTrue(foundMembers.isEmpty());
     }

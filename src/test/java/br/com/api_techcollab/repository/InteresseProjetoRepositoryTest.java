@@ -1,4 +1,3 @@
-// src/test/java/br/com/api_techcollab/repository/InteresseProjetoRepositoryTest.java
 package br.com.api_techcollab.repository;
 
 import br.com.api_techcollab.model.InteresseProjeto;
@@ -24,7 +23,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class InteresseProjetoRepositoryTest {
 
-    @Mock
+    @Mock // Cria um mock do InteresseProjetoRepository.
     private InteresseProjetoRepository interesseProjetoRepository;
 
     private Profissional profissional;
@@ -33,8 +32,9 @@ public class InteresseProjetoRepositoryTest {
     private InteresseProjeto interesse1;
     private InteresseProjeto interesse2;
 
-    @BeforeEach
+    @BeforeEach // Executado antes de cada método de teste.
     void setUp() {
+        // Inicializa as entidades de teste.
         profissional = new Profissional();
         profissional.setId(1L);
         profissional.setNome("Profissional Teste");
@@ -73,17 +73,17 @@ public class InteresseProjetoRepositoryTest {
         interesse2.setStatusInteresse(StatusInteresse.SELECIONADO);
     }
 
-    @Test
-    @DisplayName("Deve encontrar interesses por ID de profissional")
+    @Test // Marca o método como um teste.
+    @DisplayName("Deve encontrar interesses por ID de profissional") // Nome amigável para o teste.
     void findByProfissionalId_ShouldReturnInteresses() {
-        // Arrange
+        // Configura o mock do repositório para retornar uma lista de interesses quando findByProfissionalId for chamado.
         List<InteresseProjeto> interessesDoProfissional = Arrays.asList(interesse1, interesse2);
         when(interesseProjetoRepository.findByProfissionalId(profissional.getId())).thenReturn(interessesDoProfissional);
 
-        // Act
+        // Executa o método do repositório.
         List<InteresseProjeto> foundInteresses = interesseProjetoRepository.findByProfissionalId(profissional.getId());
 
-        // Assert
+        // Verifica se a lista não é nula, não está vazia, tem o tamanho esperado e contém os interesses corretos.
         assertNotNull(foundInteresses);
         assertFalse(foundInteresses.isEmpty());
         assertEquals(2, foundInteresses.size());
@@ -94,14 +94,15 @@ public class InteresseProjetoRepositoryTest {
     @Test
     @DisplayName("Deve retornar lista vazia para profissional sem interesses")
     void findByProfissionalId_ShouldReturnEmptyList_WhenNoInterests() {
-        // Arrange
+        // Define um ID de profissional que não existe.
         Long nonExistentProfissionalId = 99L;
+        // Configura o mock do repositório para retornar uma lista vazia quando findByProfissionalId for chamado com um ID inexistente.
         when(interesseProjetoRepository.findByProfissionalId(nonExistentProfissionalId)).thenReturn(Arrays.asList());
 
-        // Act
+        // Executa o método do repositório.
         List<InteresseProjeto> foundInteresses = interesseProjetoRepository.findByProfissionalId(nonExistentProfissionalId);
 
-        // Assert
+        // Verifica se a lista não é nula e está vazia.
         assertNotNull(foundInteresses);
         assertTrue(foundInteresses.isEmpty());
     }
@@ -109,14 +110,14 @@ public class InteresseProjetoRepositoryTest {
     @Test
     @DisplayName("Deve encontrar interesses por ID de vaga de projeto")
     void findByVagaProjetoId_ShouldReturnInteresses() {
-        // Arrange
+        // Configura o mock do repositório para retornar uma lista de interesses quando findByVagaProjetoId for chamado.
         List<InteresseProjeto> interessesDaVaga = Collections.singletonList(interesse1);
         when(interesseProjetoRepository.findByVagaProjetoId(vagaProjeto1.getId())).thenReturn(interessesDaVaga);
 
-        // Act
+        // Executa o método do repositório.
         List<InteresseProjeto> foundInteresses = interesseProjetoRepository.findByVagaProjetoId(vagaProjeto1.getId());
 
-        // Assert
+        // Verifica se a lista não é nula, não está vazia, tem o tamanho esperado e contém o interesse correto.
         assertNotNull(foundInteresses);
         assertFalse(foundInteresses.isEmpty());
         assertEquals(1, foundInteresses.size());
@@ -126,14 +127,15 @@ public class InteresseProjetoRepositoryTest {
     @Test
     @DisplayName("Deve retornar lista vazia para vaga sem interesses")
     void findByVagaProjetoId_ShouldReturnEmptyList_WhenNoInterests() {
-        // Arrange
+        // Define um ID de vaga que não existe.
         Long nonExistentVagaId = 9999L;
+        // Configura o mock do repositório para retornar uma lista vazia quando findByVagaProjetoId for chamado com um ID inexistente.
         when(interesseProjetoRepository.findByVagaProjetoId(nonExistentVagaId)).thenReturn(Arrays.asList());
 
-        // Act
+        // Executa o método do repositório.
         List<InteresseProjeto> foundInteresses = interesseProjetoRepository.findByVagaProjetoId(nonExistentVagaId);
 
-        // Assert
+        // Verifica se a lista não é nula e está vazia.
         assertNotNull(foundInteresses);
         assertTrue(foundInteresses.isEmpty());
     }

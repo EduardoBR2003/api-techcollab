@@ -1,4 +1,3 @@
-// src/test/java/br/com/api_techcollab/repository/AvaliacaoRepositoryTest.java
 package br.com.api_techcollab.repository;
 
 import br.com.api_techcollab.model.Avaliacao;
@@ -23,7 +22,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class AvaliacaoRepositoryTest {
 
-    @Mock
+    @Mock // Cria um mock do AvaliacaoRepository.
     private AvaliacaoRepository avaliacaoRepository;
 
     private Projeto projeto;
@@ -32,8 +31,9 @@ public class AvaliacaoRepositoryTest {
     private Avaliacao avaliacao1;
     private Avaliacao avaliacao2;
 
-    @BeforeEach
+    @BeforeEach // Executado antes de cada método de teste.
     void setUp() {
+        // Inicializa as entidades de teste para simular cenários do repositório.
         avaliadorEmpresa = new Empresa();
         avaliadorEmpresa.setId(1L);
 
@@ -64,17 +64,17 @@ public class AvaliacaoRepositoryTest {
         avaliacao2.setDataAvaliacao(new Date());
     }
 
-    @Test
-    @DisplayName("Deve encontrar avaliações por ID de projeto")
+    @Test // Marca o método como um teste.
+    @DisplayName("Deve encontrar avaliações por ID de projeto") // Nome amigável para o teste.
     void findByProjetoId_ShouldReturnAvaliacoes() {
-        // Arrange
+        // Configura o mock do repositório para retornar uma lista de avaliações quando findByProjetoId for chamado com o ID do projeto.
         List<Avaliacao> avaliacoesDoProjeto = Arrays.asList(avaliacao1, avaliacao2);
         when(avaliacaoRepository.findByProjetoId(projeto.getId())).thenReturn(avaliacoesDoProjeto);
 
-        // Act
+        // Executa o método do repositório que está sendo testado.
         List<Avaliacao> foundAvaliacoes = avaliacaoRepository.findByProjetoId(projeto.getId());
 
-        // Assert
+        // Verifica se a lista não é nula, não está vazia, tem o tamanho esperado e contém as avaliações corretas.
         assertNotNull(foundAvaliacoes);
         assertFalse(foundAvaliacoes.isEmpty());
         assertEquals(2, foundAvaliacoes.size());
@@ -85,14 +85,14 @@ public class AvaliacaoRepositoryTest {
     @Test
     @DisplayName("Deve retornar lista vazia para projeto sem avaliações")
     void findByProjetoId_ShouldReturnEmptyList_WhenNoAvaliacoes() {
-        // Arrange
+        // Configura o mock do repositório para retornar uma lista vazia quando findByProjetoId for chamado com um ID de projeto inexistente.
         Long nonExistentProjetoId = 99L;
         when(avaliacaoRepository.findByProjetoId(nonExistentProjetoId)).thenReturn(Arrays.asList());
 
-        // Act
+        // Executa o método do repositório.
         List<Avaliacao> foundAvaliacoes = avaliacaoRepository.findByProjetoId(nonExistentProjetoId);
 
-        // Assert
+        // Verifica se a lista não é nula e está vazia.
         assertNotNull(foundAvaliacoes);
         assertTrue(foundAvaliacoes.isEmpty());
     }

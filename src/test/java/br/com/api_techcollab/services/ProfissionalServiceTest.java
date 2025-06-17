@@ -30,44 +30,46 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class ProfissionalServiceTest {
 
-    @Mock
+    @Mock // Cria um mock do ProfissionalRepository.
     private ProfissionalRepository profissionalRepository;
-    @Mock
+    @Mock // Cria um mock do UsuarioRepository.
     private UsuarioRepository usuarioRepository;
-    @Mock
+    @Mock // Cria um mock do MembroEquipeRepository.
     private MembroEquipeRepository membroEquipeRepository;
-    @Mock
+    @Mock // Cria um mock do InteresseProjetoRepository.
     private InteresseProjetoRepository interesseProjetoRepository;
 
-    @InjectMocks
+    @InjectMocks // Injeta os mocks no ProfissionalService.
     private ProfissionalService profissionalService;
 
     private Profissional profissional;
     private ProfissionalCreateDTO profissionalCreateDTO;
 
-    @BeforeEach
+    @BeforeEach // Executado antes de cada método de teste.
     void setUp() {
+        // Inicializa uma entidade Profissional de teste.
         profissional = new Profissional();
         profissional.setId(1L);
         profissional.setNome("João da Silva");
         profissional.setEmail("joao.silva@dev.com");
 
+        // Inicializa um DTO para criação de profissional.
         profissionalCreateDTO = new ProfissionalCreateDTO();
         profissionalCreateDTO.setNome("Maria Santos");
         profissionalCreateDTO.setEmail("maria.santos@dev.com");
         profissionalCreateDTO.setSenha("senha123");
     }
 
-    @Test
-    @DisplayName("Deve retornar um profissional quando o ID for válido")
+    @Test // Marca o método como um teste.
+    @DisplayName("Deve retornar um profissional quando o ID for válido") // Nome amigável para o teste.
     void testFindById_Success() {
-        // Arrange
+        // Configura o mock do repositório para retornar o profissional de teste quando findById for chamado.
         when(profissionalRepository.findById(1L)).thenReturn(Optional.of(profissional));
 
-        // Act
+        // Executa o método do serviço.
         ProfissionalResponseDTO result = profissionalService.findById(1L);
 
-        // Assert
+        // Verifica se o resultado não é nulo, se o nome corresponde e se o método findById foi chamado.
         assertNotNull(result);
         assertEquals("João da Silva", result.getNome());
         verify(profissionalRepository).findById(1L);
@@ -76,29 +78,29 @@ public class ProfissionalServiceTest {
     @Test
     @DisplayName("Deve lançar ResourceNotFoundException quando o ID for inválido")
     void testFindById_NotFound() {
-        // Arrange
+        // Configura o mock para retornar um Optional vazio quando findById for chamado com um ID inválido.
         when(profissionalRepository.findById(anyLong())).thenReturn(Optional.empty());
 
-        // Act & Assert
+        // Verifica se ResourceNotFoundException é lançada.
         assertThrows(ResourceNotFoundException.class, () -> profissionalService.findById(99L));
     }
 
     @Test
     @DisplayName("Deve criar um novo profissional com sucesso")
     void testCreate_Success() {
-        // Arrange
+        // Configura os mocks para simular a criação bem-sucedida de um profissional.
         Profissional profissionalSalvo = new Profissional();
         profissionalSalvo.setId(2L);
         profissionalSalvo.setNome(profissionalCreateDTO.getNome());
 
-        when(usuarioRepository.findByEmail(anyString())).thenReturn(Optional.empty());
+        when(usuarioRepository.findByEmail(anyString())).thenReturn(Optional.empty()); // Email não existe
         when(profissionalRepository.save(any(Profissional.class))).thenReturn(profissionalSalvo);
-        when(profissionalRepository.findById(2L)).thenReturn(Optional.of(profissionalSalvo));
+        when(profissionalRepository.findById(2L)).thenReturn(Optional.of(profissionalSalvo)); // Simula o retorno para HATEOAS
 
-        // Act
+        // Executa o método do serviço.
         ProfissionalResponseDTO result = profissionalService.create(profissionalCreateDTO);
 
-        // Assert
+        // Verifica se o resultado não é nulo, se o nome corresponde e se o método save foi chamado.
         assertNotNull(result);
         assertEquals("Maria Santos", result.getNome());
         verify(profissionalRepository).save(any(Profissional.class));
@@ -107,10 +109,10 @@ public class ProfissionalServiceTest {
     @Test
     @DisplayName("Deve lançar BusinessException ao tentar criar profissional com email já existente")
     void testCreate_EmailAlreadyExists() {
-        // Arrange
+        // Configura o mock para simular que um usuário com o email já existe.
         when(usuarioRepository.findByEmail("maria.santos@dev.com")).thenReturn(Optional.of(new Profissional()));
 
-        // Act & Assert
+        // Verifica se BusinessException é lançada e se a mensagem está correta.
         BusinessException exception = assertThrows(BusinessException.class, () -> {
             profissionalService.create(profissionalCreateDTO);
         });
@@ -120,20 +122,21 @@ public class ProfissionalServiceTest {
     @Test
     @DisplayName("Deve deletar um profissional sem dependências")
     void testDelete_Success() {
-        // Arrange
+        // Configura os mocks para simular que o profissional não tem dependências ativas.
         when(profissionalRepository.findById(1L)).thenReturn(Optional.of(profissional));
-        when(membroEquipeRepository.findAll()).thenReturn(Collections.emptyList());
-        when(interesseProjetoRepository.findByProfissionalId(1L)).thenReturn(Collections.emptyList());
+        when(membroEquipeRepository.findAll()).thenReturn(Collections.emptyList()); // Não é membro de equipe
+        when(interesseProjetoRepository.findByProfissionalId(1L)).thenReturn(Collections.emptyList()); // Não tem interesses ativos
 
-        // Act & Assert
+        // Verifica que nenhuma exceção é lançada ao deletar.
         assertDoesNotThrow(() -> profissionalService.delete(1L));
+        // Verifica se o método delete foi chamado.
         verify(profissionalRepository, times(1)).delete(profissional);
     }
 
     @Test
     @DisplayName("Deve lançar BusinessException ao tentar deletar profissional com interesses ativos")
     void testDelete_WithActiveInterests() {
-        // Arrange
+        // Configura os mocks para simular que o profissional tem um interesse ativo.
         InteresseProjeto interesseAtivo = new InteresseProjeto();
         interesseAtivo.setStatusInteresse(StatusInteresse.PENDENTE);
 
@@ -141,9 +144,10 @@ public class ProfissionalServiceTest {
         when(membroEquipeRepository.findAll()).thenReturn(Collections.emptyList());
         when(interesseProjetoRepository.findByProfissionalId(1L)).thenReturn(Collections.singletonList(interesseAtivo));
 
-        // Act & Assert
+        // Verifica se BusinessException é lançada e se a mensagem contém a substring esperada.
         BusinessException exception = assertThrows(BusinessException.class, () -> profissionalService.delete(1L));
         assertTrue(exception.getMessage().contains("interesse(s) ativo(s) em projetos"));
+        // Verifica que o método delete NUNCA foi chamado.
         verify(profissionalRepository, never()).delete(any(Profissional.class));
     }
 }
